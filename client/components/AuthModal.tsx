@@ -16,7 +16,6 @@ import { FcGoogle } from "react-icons/fc";
 
 // Fake API call to check employee ID; replace with your real API call.
 async function checkEmployeeId(employeeId) {
-    response = await fetch('/api/user/employee/check')
   return new Promise((resolve) => {
     setTimeout(() => {
       // For this example, only employee ID "1234" exists.
@@ -123,6 +122,7 @@ export default function AuthModal() {
       // Here you would typically make an API call to register the user
     } catch (err) {
       setError("Error during registration. Please try again.");
+      console.log(err);
     } finally {
       setLoading(false);
     }
