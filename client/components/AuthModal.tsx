@@ -95,6 +95,7 @@ export default function AuthModal() {
       });
     } catch (err) {
       setError("Error during registration. Please try again.");
+      console.log(err)
     } finally {
       setLoading(false);
     }
