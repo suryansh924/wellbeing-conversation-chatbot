@@ -1,3 +1,4 @@
+// components/AuthModal.tsx
 "use client";
 
 import * as React from "react";
@@ -13,24 +14,42 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { FcGoogle } from "react-icons/fc";
+import { useAuth } from "@/context/AuthContext";
 
-// Fake API call to check employee ID; replace with your real API call.
-async function checkEmployeeId(employeeId) {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      // For this example, only employee ID "1234" exists.
-      resolve(employeeId === "1234");
-    }, 1000);
-  });
+// API call to check employee ID via backend.
+async function checkEmployeeId(employeeId: string): Promise<boolean> {
+  try {
+    const response = await fetch(
+      `http://127.0.0.1:8000/api/user/check/${employeeId}`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+    if (!response.ok) {
+      throw new Error("Network response was not ok");
+    }
+    const data = await response.json();
+    return data.exists;
+  } catch (error) {
+    console.error("Error checking employee ID:", error);
+    throw error;
+  }
 }
 
 export default function AuthModal() {
+  const { signIn, signUp, signInWithGoogle } = useAuth();
+
   // Modal open state.
   const [open, setOpen] = React.useState(false);
   // Mode can be "login" or "register".
-  const [mode, setMode] = React.useState("login");
+  const [mode, setMode] = React.useState<"login" | "register">("login");
   // Registration step: "checkId" or "registerForm"
-  const [registerStep, setRegisterStep] = React.useState("checkId");
+  const [registerStep, setRegisterStep] = React.useState<
+    "checkId" | "registerForm"
+  >("checkId");
 
   // Employee ID validation state
   const [employeeIdValid, setEmployeeIdValid] = React.useState(false);
@@ -39,7 +58,7 @@ export default function AuthModal() {
   const [loginEmail, setLoginEmail] = React.useState("");
   const [loginPassword, setLoginPassword] = React.useState("");
 
-  // Employee ID check state
+  // Employee ID check state for registration.
   const [regEmployeeId, setRegEmployeeId] = React.useState("");
 
   // Registration form states.
@@ -53,7 +72,7 @@ export default function AuthModal() {
   const [error, setError] = React.useState("");
 
   // Reset states when modal closes.
-  const handleOpenChange = (isOpen) => {
+  const handleOpenChange = (isOpen: boolean) => {
     if (!isOpen) {
       setLoginEmail("");
       setLoginPassword("");
@@ -70,16 +89,21 @@ export default function AuthModal() {
     setOpen(isOpen);
   };
 
-  // Handle login submission.
-  const handleLoginSubmit = (e) => {
+  // Handle login submission using Firebase.
+  const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    // Replace with your login logic.
-    console.log("Logging in with:", { loginEmail, loginPassword });
+    try {
+      await signIn(loginEmail, loginPassword);
+      // On success, close the modal.
+      setOpen(false);
+    } catch (err: any) {
+      setError(err.message);
+    }
   };
 
-  // Handle employee ID verification
-  const handleVerifyEmployeeId = async (e) => {
+  // Handle employee ID verification for registration.
+  const handleVerifyEmployeeId = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setLoading(true);
@@ -100,8 +124,8 @@ export default function AuthModal() {
     }
   };
 
-  // Handle registration submission.
-  const handleRegisterSubmit = async (e) => {
+  // Handle registration submission using Firebase.
+  const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
@@ -112,32 +136,23 @@ export default function AuthModal() {
 
     setLoading(true);
     try {
-      // Replace with your registration logic.
-      console.log("Registering with:", {
-        regEmployeeId,
-        regName,
-        regEmail,
-        regPassword,
-      });
-      // Here you would typically make an API call to register the user
-    } catch (err) {
-      setError("Error during registration. Please try again.");
-      console.log(err);
+      await signUp(regEmail, regPassword);
+      // Optionally update user profile with regName using Firebase's updateProfile.
+      setOpen(false);
+    } catch (err: any) {
+      setError(err.message);
     } finally {
       setLoading(false);
     }
   };
 
-  // Google sign-in handler.
-  const handleGoogleSignIn = (isRegistration = false) => {
-    // Replace with your Google sign-in logic.
-    if (isRegistration) {
-      console.log(
-        "Google registration clicked with employee ID:",
-        regEmployeeId
-      );
-    } else {
-      console.log("Google sign in clicked");
+  // Google sign-in handler using Firebase.
+  const handleGoogleSignIn = async (isRegistration = false) => {
+    try {
+      await signInWithGoogle();
+      setOpen(false);
+    } catch (err: any) {
+      setError(err.message);
     }
   };
 
@@ -160,7 +175,7 @@ export default function AuthModal() {
             <div className="flex flex-col gap-4">
               <Button
                 type="button"
-                onClick={handleGoogleSignIn}
+                onClick={() => handleGoogleSignIn()}
                 variant="outline"
                 className="w-full bg-gray-200 text-black hover:bg-gray-300"
               >
