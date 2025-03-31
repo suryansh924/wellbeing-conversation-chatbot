@@ -1,19 +1,25 @@
 from fastapi import APIRouter, HTTPException, Depends, Header
 from sqlalchemy.orm import Session
 from datetime import timedelta
-import firebase_admin
-from firebase_admin import auth, credentials
+# import firebase_admin
+# from firebase_admin import auth, credentials
 
 from database.models import Master
 from database.conn import SessionLocal
 from pydantic import BaseModel, EmailStr
 from typing import List
+from datetime import datetime, timedelta, timezone
+import jwt
+
 
 
 # cred = credentials.Certificate("path/to/serviceAccountKey.json")
 # firebase_admin.initialize_app(cred)
 
 # Base.metadata.create_all(bind=engine)
+SECRET_KEY = "your-secret-key"  # Replace with your secret key
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 router = APIRouter()
 
@@ -32,11 +38,30 @@ class EmployeeCheckRequest(BaseModel):
 
 class EmployeeCheckResponse(BaseModel):
     exists: bool
-
-class UserRegister(BaseModel):
-    employee_id: str
+class LoginUser(BaseModel):
     email: EmailStr
+    password: str
+
+class RegisterUser(BaseModel):
+    email: EmailStr
+    emp_id: str
     name: str
+
+class OAuthUser(BaseModel):
+    email: EmailStr
+    emp_id: str
+    name: str
+    isRegistration: bool
+
+# Function to generate a JWT token with employee id as payload
+def create_access_token(data: dict, expires_delta: timedelta = None):
+    to_encode = data.copy()
+    expire = datetime.now(timezone.utc) + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
+    to_encode.update({"exp": expire})
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
+
+
 
 class UserResponse(BaseModel):
     employee_id: str
@@ -50,7 +75,57 @@ class UserResponse(BaseModel):
 
     class Config:
         orm_mode = True
+    
+@router.post("/login")
+def login(user: LoginUser, db: Session = Depends(get_db)):
+    db_user = db.query(Master).filter(Master.email == user.email).first()
+    if not db_user:
+        raise HTTPException(status_code=400, detail="User does not exist")
+    token= create_access_token(data={"emp_id": db_user.employee_id})
+    return {"token": token, "role": db_user.role}
 
+
+@router.post("/oauth")
+def oauth(user: OAuthUser, db: Session = Depends(get_db)):
+    if not user.isRegistration:
+        db_user = db.query(Master).filter(Master.email == user.email).first()
+        if not db_user:
+            raise HTTPException(status_code=400, detail="User does not exist")
+        token= create_access_token(data={"emp_id": db_user.employee_id})
+        return {"token": token, "role": db_user.role}
+    else:
+        existing_employee = db.query(Master).filter(Master.employee_id == user.emp_id).first()
+        if not existing_employee:
+            raise HTTPException(
+            status_code=400,
+            detail="Invalid employee_id. Please contact HR."
+        )
+    
+        # If an email is already registered for that employee, reject the registration
+        if existing_employee.employee_email and existing_employee.employee_email.strip() != "":
+            raise HTTPException(
+                status_code=400,
+                detail="This employee is already registered."
+            )
+        
+        check_email = db.query(Master).filter(Master.email == user.email).first()
+        if check_email:
+            raise HTTPException(
+                status_code=400,
+                detail="This email is already registered with another employee."
+            )
+        
+
+
+        # Update the existing record with name and email
+        existing_employee.employee_name = user.name
+        existing_employee.employee_email = user.email
+        db.commit()
+        db.refresh(existing_employee)
+        access_token = create_access_token(data={"emp_id": user.emp_id})
+        return {"token": access_token}
+
+    
 
 @router.get("/check/{employee_id}", response_model=EmployeeCheckResponse)
 def check_employee_id(employee_id: str, db: Session = Depends(get_db)):
@@ -60,8 +135,8 @@ def check_employee_id(employee_id: str, db: Session = Depends(get_db)):
     existing = db.query(Master).filter(Master.employee_id == employee_id).first()
     return {"exists": bool(existing)}
 
-@router.post("/register", response_model=UserRegister)
-def register(user: UserRegister, db: Session = Depends(get_db)):
+@router.post("/register")
+def register(user: RegisterUser, db: Session = Depends(get_db)):
     """
     Register a new user using Firebase (or an external provider). The employee IDs are
     preloaded in the database. When a user registers, update the existing record with the
@@ -69,7 +144,7 @@ def register(user: UserRegister, db: Session = Depends(get_db)):
     return an error.
     """
     # Check if the employee_id exists in the database
-    existing_employee = db.query(Master).filter(Master.employee_id == user.employee_id).first()
+    existing_employee = db.query(Master).filter(Master.employee_id == user.emp_id).first()
     if not existing_employee:
         raise HTTPException(
             status_code=400,
@@ -82,55 +157,34 @@ def register(user: UserRegister, db: Session = Depends(get_db)):
             status_code=400,
             detail="This employee is already registered."
         )
+    check_email = db.query(Master).filter(Master.email == user.email).first()
+    if check_email:
+        raise HTTPException(
+                status_code=400,
+                detail="This email is already registered with another employee."
+            )
     
     # Update the existing record with name and email
     existing_employee.employee_name = user.name
     existing_employee.employee_email = user.email
     db.commit()
     db.refresh(existing_employee)
-    
-    return {"message": "Registration successful."}
+    access_token = create_access_token(data={"emp_id": user.emp_id})
+    return {"token": access_token}
 
-
-def verify_firebase_token(token: str):
+def verify_user(token: str):
     """
-    Verifies the Firebase JWT and returns the decoded claims.
+    Verifies the JWT and returns the decoded claims.
     """
     try:
-        decoded_claims = auth.verify_id_token(token)
-        return decoded_claims
+        decoded_claims = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        emp_id= decoded_claims.get("emp_id")
+        return emp_id
     except Exception as e:
-        raise HTTPException(status_code=401, detail="Invalid Firebase token")
-
-def get_current_user(
-    authorization: str = Header(...),
-    db: Session = Depends(get_db)
-):
-    """
-    Extracts the token from the 'Authorization' header, verifies it with Firebase,
-    and returns the corresponding Employee record from the database.
-    It first attempts to get the employee_id from the token claims.
-    """
-    if not authorization.startswith("Bearer "):
-        raise HTTPException(status_code=401, detail="Invalid authorization header")
-    token = authorization.split(" ")[1]
-    claims = verify_firebase_token(token)
-    
-
-    employee_id = claims.get("employee_id")
-    if not employee_id:
-        employee_id = claims.get("uid")  
-        if not employee_id:
-            raise HTTPException(status_code=401, detail="Token missing employee identifier")
-    
-    # Query the Employee record using the employee_id
-    user = db.query(Master).filter(Master.employee_id == employee_id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    
-    return user
+        raise HTTPException(status_code=401, detail="Invalid token")
 
 
 @router.get("/employee", response_model=UserResponse)
-def get_employee(current_user: Master = Depends(get_current_user)):
-    return current_user
+def get_employee(user_id: str = Depends(verify_user), db: Session = Depends(get_db)):
+    user= db.query(Master).filter(Master.employee_id == user_id).first()
+    return user

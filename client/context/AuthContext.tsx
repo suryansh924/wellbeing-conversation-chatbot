@@ -15,9 +15,11 @@ import {
   createUserWithEmailAndPassword,
   GoogleAuthProvider,
   signInWithPopup,
+  TwitterAuthProvider,
   updateProfile,
 } from "firebase/auth";
-import { app } from "@/app/firebase/config";
+import axios from "axios";
+import { app } from "@/firebase/config";
 
 const auth = getAuth(app);
 
@@ -32,11 +34,14 @@ export interface Employee {
 interface AuthContextType {
   user: any;
   employeeData: Employee | null;
+  isLogged: boolean;
+  setIsLogged: (isLogged: boolean) => void;
   setEmployeeData: (employee: Employee) => void;
   signIn: (email: string, password: string) => Promise<any>;
   signUp: (email: string, password: string, name: string) => Promise<any>;
   signInWithGoogle: () => Promise<any>;
   logout: () => Promise<void>;
+  signInWithTwitter: () => Promise<any>;
   fetchEmployeeProfile: () => Promise<Employee>;
 }
 
@@ -44,19 +49,25 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<any>(null);
+  const [isLogged, setIsLogged] = useState(false);
   const [employeeData, setEmployeeData] = useState<Employee | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-      setUser(firebaseUser);
-      setLoading(false);
-    });
-    return unsubscribe;
+    const fetchData = async () => {
+      const token = typeof window !== "undefined" && localStorage.getItem("access_token");
+      if (token) {
+        setIsLogged(true);
+        await fetchEmployeeProfile();
+      } 
+    };
+    fetchData();
   }, []);
+  
 
-  const signIn = (email: string, password: string) => {
+  const signIn = async (email: string, password: string) => {
     return signInWithEmailAndPassword(auth, email, password);
+    
   };
 
   const signUp = async (email: string, password: string, name: string) => {
@@ -66,14 +77,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       password
     );
     // Update the user's display name
-    await updateProfile(userCredential.user, { displayName: name });
+    // await updateProfile(userCredential.user, { displayName: name });
     return userCredential;
   };
 
-  const signInWithGoogle = () => {
+  const signInWithGoogle = async() => {
     const provider = new GoogleAuthProvider();
-    return signInWithPopup(auth, provider);
+    const res=await signInWithPopup(auth, provider);
+    const user=res.user;
+    return user;
   };
+  const signInWithTwitter = async() => {
+    const provider = new TwitterAuthProvider();
+    const res=await signInWithPopup(auth, provider);
+    const user=res.user;
+    return user;
+  }
 
   const logout = () => {
     return signOut(auth);
@@ -86,7 +105,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${user.accessToken}`,
+        Authorization: `Bearer ${localStorage.getItem("access_token")}`,
         // You can include an authorization header if your backend requires it
       },
     });
@@ -104,7 +123,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       value={{
         user,
         employeeData,
+        isLogged,
+        setIsLogged,
         setEmployeeData,
+        signInWithTwitter,
         signIn,
         signUp,
         signInWithGoogle,
