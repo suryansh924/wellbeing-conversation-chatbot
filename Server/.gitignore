@@ -1,0 +1,8 @@
+/venv
+.zshrc
+.env.aws
+
+=======
+venv/
+.zshrc
+__pycache__/
