@@ -15,23 +15,36 @@ import {
   createUserWithEmailAndPassword,
   GoogleAuthProvider,
   signInWithPopup,
+  updateProfile,
 } from "firebase/auth";
 import { app } from "@/app/firebase/config";
 
 const auth = getAuth(app);
 
+export interface Employee {
+  id: string;
+  name: string;
+  email: string;
+  isFlagged: boolean;
+  // add other properties as needed (e.g. shap values, etc.)
+}
+
 interface AuthContextType {
   user: any;
+  employeeData: Employee | null;
+  setEmployeeData: (employee: Employee) => void;
   signIn: (email: string, password: string) => Promise<any>;
-  signUp: (email: string, password: string) => Promise<any>;
+  signUp: (email: string, password: string, name: string) => Promise<any>;
   signInWithGoogle: () => Promise<any>;
   logout: () => Promise<void>;
+  fetchEmployeeProfile: () => Promise<Employee>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<any>(null);
+  const [employeeData, setEmployeeData] = useState<Employee | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -46,8 +59,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return signInWithEmailAndPassword(auth, email, password);
   };
 
-  const signUp = (email: string, password: string) => {
-    return createUserWithEmailAndPassword(auth, email, password);
+  const signUp = async (email: string, password: string, name: string) => {
+    const userCredential = await createUserWithEmailAndPassword(
+      auth,
+      email,
+      password
+    );
+    // Update the user's display name
+    await updateProfile(userCredential.user, { displayName: name });
+    return userCredential;
   };
 
   const signInWithGoogle = () => {
@@ -59,11 +79,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return signOut(auth);
   };
 
+  // Fetch additional employee details from your backend.
+  const fetchEmployeeProfile = async (): Promise<Employee> => {
+    // You might need to send an auth token or user id to fetch the profile
+    const response = await fetch("http://127.0.0.1:8000/api/user/employee", {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${user.accessToken}`,
+        // You can include an authorization header if your backend requires it
+      },
+    });
+    if (!response.ok) {
+      throw new Error("Failed to fetch employee profile");
+    }
+    const data = await response.json();
+    setEmployeeData(data);
+    console.log(data);
+    return data;
+  };
+
   return (
     <AuthContext.Provider
-      value={{ user, signIn, signUp, signInWithGoogle, logout }}
+      value={{
+        user,
+        employeeData,
+        setEmployeeData,
+        signIn,
+        signUp,
+        signInWithGoogle,
+        logout,
+        fetchEmployeeProfile,
+      }}
     >
-      {/* Only render children after the auth state is determined */}
       {!loading && children}
     </AuthContext.Provider>
   );

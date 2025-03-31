@@ -1,4 +1,3 @@
-// components/AuthModal.tsx
 "use client";
 
 import * as React from "react";
@@ -15,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { FcGoogle } from "react-icons/fc";
 import { useAuth } from "@/context/AuthContext";
+import { useRouter } from "next/navigation";
 
 // API call to check employee ID via backend.
 async function checkEmployeeId(employeeId: string): Promise<boolean> {
@@ -40,7 +40,8 @@ async function checkEmployeeId(employeeId: string): Promise<boolean> {
 }
 
 export default function AuthModal() {
-  const { signIn, signUp, signInWithGoogle } = useAuth();
+  const { signIn, signUp, signInWithGoogle, fetchEmployeeProfile } = useAuth();
+  const router = useRouter();
 
   // Modal open state.
   const [open, setOpen] = React.useState(false);
@@ -50,9 +51,6 @@ export default function AuthModal() {
   const [registerStep, setRegisterStep] = React.useState<
     "checkId" | "registerForm"
   >("checkId");
-
-  // Employee ID validation state
-  const [employeeIdValid, setEmployeeIdValid] = React.useState(false);
 
   // Login form states.
   const [loginEmail, setLoginEmail] = React.useState("");
@@ -84,9 +82,23 @@ export default function AuthModal() {
       setError("");
       setMode("login");
       setRegisterStep("checkId");
-      setEmployeeIdValid(false);
     }
     setOpen(isOpen);
+  };
+
+  // After successful login or registration, fetch the employee profile
+  // and route the user based on whether they are flagged.
+  const handlePostAuth = async () => {
+    try {
+      const profile = await fetchEmployeeProfile();
+      if (profile.isFlagged) {
+        router.push("/conversation");
+      } else {
+        router.push("/dashboard");
+      }
+    } catch (err: any) {
+      setError(err.message);
+    }
   };
 
   // Handle login submission using Firebase.
@@ -95,7 +107,7 @@ export default function AuthModal() {
     setError("");
     try {
       await signIn(loginEmail, loginPassword);
-      // On success, close the modal.
+      await handlePostAuth();
       setOpen(false);
     } catch (err: any) {
       setError(err.message);
@@ -107,14 +119,11 @@ export default function AuthModal() {
     e.preventDefault();
     setError("");
     setLoading(true);
-
     try {
       const exists = await checkEmployeeId(regEmployeeId);
       if (!exists) {
         setError("Employee ID not found.");
-        setEmployeeIdValid(false);
       } else {
-        setEmployeeIdValid(true);
         setRegisterStep("registerForm");
       }
     } catch (err) {
@@ -128,16 +137,14 @@ export default function AuthModal() {
   const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-
     if (regPassword !== regConfirmPassword) {
       setError("Passwords do not match.");
       return;
     }
-
     setLoading(true);
     try {
-      await signUp(regEmail, regPassword);
-      // Optionally update user profile with regName using Firebase's updateProfile.
+      await signUp(regEmail, regPassword, regName);
+      await handlePostAuth();
       setOpen(false);
     } catch (err: any) {
       setError(err.message);
@@ -150,6 +157,7 @@ export default function AuthModal() {
   const handleGoogleSignIn = async (isRegistration = false) => {
     try {
       await signInWithGoogle();
+      await handlePostAuth();
       setOpen(false);
     } catch (err: any) {
       setError(err.message);
