@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Mic, MicOff, Send, Volume2, VolumeX } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import axios from "axios";
 
 interface Message {
   id: string;
@@ -16,38 +17,75 @@ interface Message {
 }
 
 export default function ConversationPage() {
+
+  const server = "http://127.0.0.1:8000"
+
   const router = useRouter();
+  const [employee_name, setEmployee_Name] = useState("");
+  const [employee_id, setEmployee_Id] = useState("");
+  const [shap, setShap] = useState<string[]>([]);
+  const [conversationId, setConversationId] = useState<string | null>(null);
+  const [selectedQuestions, setSelectedQuestions] = useState<string[]>([]);
+  const [maxQuestions, setMaxQuestions] = useState(6);
+  // const [employee_reponse, setEmployee_Response] = useState("");
+
   const [messages, setMessages] = useState<Message[]>([]);
+
+  const [chatHistory, setChatHistory] = useState<{ sender_type: string; message: string }[]>([]);
+
   const [inputValue, setInputValue] = useState("");
   const [isRecording, setIsRecording] = useState(false);
   const [isSpeakerOn, setIsSpeakerOn] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    // Check if user is authenticated and flagged
-    // Replace with your authentication logic.
-    const isAuthenticated = localStorage.getItem("isAuthenticated");
-    if (!isAuthenticated) {
-      router.push("/");
-      return;
-    }
-    const isUserFlagged = localStorage.getItem("isUserFlagged");
-    if (isUserFlagged !== "true") {
-      router.push("/dashboard");
-      return;
-    }
 
-    // Add an initial welcome message.
-    setMessages([
-      {
-        id: "welcome",
-        content:
-          "Welcome to your scheduled well-being check-in. How are you feeling today?",
-        isUser: false,
-        timestamp: new Date(),
-      },
-    ]);
-  }, [router]);
+  useEffect(() => {
+    // Start a new conversation when the component is mounted
+    setEmployee_Id("EMP0001");
+    setEmployee_Name("Veena");
+    setShap(["performance", "leave"]);
+  }, []);
+
+  useEffect(() => {
+    if (employee_id && employee_name && shap.length > 0) {
+      const startConversation = async () => {
+        try {
+          const response = await axios.post(
+            `${server}/api/conversation/start`,
+            {
+              employee_name: employee_name,
+              employee_id: employee_id,
+              shap: shap,
+            },
+            {
+              headers: {
+                "Content-Type": "application/json",
+              },
+            }
+          );
+          const data = response.data;
+          console.log(data);
+
+          setConversationId(data.conversation_id);
+          setSelectedQuestions(data.selected_questions);
+
+          setMessages([
+            {
+              id: "welcome",
+              content: data.chatbot_response,
+              isUser: false,
+              timestamp: new Date(),
+            },
+          ]);
+        } catch (error) {
+          console.error("Error starting conversation:", error);
+        }
+      };
+
+      startConversation();
+    }
+  }, [employee_id, employee_name, shap]); // This effect runs when employee_id, employee_name, or shap change
 
   useEffect(() => {
     // Scroll to bottom when messages change.
@@ -56,37 +94,123 @@ export default function ConversationPage() {
     }
   }, [messages]);
 
-  const handleSendMessage = () => {
-    if (inputValue.trim()) {
+  const provideInsights = async () => {
+    const response = await axios.get(
+      `${server}/api/conversation/insights/${conversationId}`,
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+    const data = await response.data;
+    console.log(data)
+    const botMessage: Message = {
+      id: `bot-${Date.now()}`,
+      content: data.insights,
+      isUser: false,
+      timestamp: new Date(),
+    };
+
+    setMessages((prev) => [...prev, botMessage]);
+
+  }
+
+  const generateReport = async () => {
+
+    //Generating key - value pairs
+    const shapValues: { [key: string]: number } = {};
+    shap.forEach(key => {
+      shapValues[key] = 0.01;
+    });
+
+    console.log(shapValues)
+
+    const response = await axios.post(
+      `${server}/api/report/employee`,
+      {
+        conversation_id: conversationId,
+        employee_id: employee_id,
+        shap_values: shapValues
+      },
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+    const data = await response.data;
+    console.log(data);
+  }
+
+
+
+  const handleSendMessage = async () => {
+
+    setIsLoading(true);
+    setMaxQuestions(maxQuestions - 1);
+    console.log(maxQuestions)
+
+    if (inputValue.trim() && conversationId) {
       const userMessage: Message = {
         id: `user-${Date.now()}`,
         content: inputValue,
         isUser: true,
         timestamp: new Date(),
       };
-
+      // Add user message to chat
       setMessages((prev) => [...prev, userMessage]);
       setInputValue("");
 
-      // Simulate a bot response.
-      setTimeout(() => {
-        const botMessage: Message = {
-          id: `bot-${Date.now()}`,
-          content:
-            "Thank you for sharing. Could you tell me more about how your work has been going this week?",
-          isUser: false,
-          timestamp: new Date(),
-        };
+      console.log("Chat history", chatHistory)
 
-        setMessages((prev) => [...prev, botMessage]);
+      // Send the user message to the backend
+      let chatbot_response = "Thank you for your time! The conversation is now over. Here are few insights for your improvement..."
+      if (maxQuestions != 0) {
+        const response = await axios.post(
+          `${server}/api/conversation/message`,
+          {
+            employee_name: employee_name,
+            employee_id: employee_id,
+            shap: shap,
+            message: inputValue,
+            conversation_id: conversationId,
+            selected_questions: selectedQuestions,
+            chat_history: chatHistory,
+          },
+          {
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }
+        );
+        const data = await response.data;
+        setChatHistory(data.chat_history);
+        chatbot_response = data.chatbot_response
+      }
 
-        if (isSpeakerOn) {
-          const speech = new SpeechSynthesisUtterance(botMessage.content);
-          window.speechSynthesis.speak(speech);
-        }
-      }, 1000);
+      const botMessage: Message = {
+        id: `bot-${Date.now()}`,
+        content: chatbot_response,
+        isUser: false,
+        timestamp: new Date(),
+      };
+
+      // Add bot message to chat
+      setMessages((prev) => [...prev, botMessage]);
+
+      // Optionally, speak the bot's response
+      // if (isSpeakerOn) {
+      //   const speech = new SpeechSynthesisUtterance(botMessage.content);
+      //   window.speechSynthesis.speak(speech);
+      // }
+      if (maxQuestions <= 0) {
+        await provideInsights();
+        generateReport();
+      }
+      setIsLoading(false);
     }
-  };
+  }
 
   const toggleMicrophone = () => {
     setIsRecording((prev) => !prev);
@@ -117,7 +241,7 @@ export default function ConversationPage() {
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey && !isLoading) {
       e.preventDefault();
       handleSendMessage();
     }
@@ -140,9 +264,8 @@ export default function ConversationPage() {
           {messages.map((message) => (
             <div
               key={message.id}
-              className={`flex ${
-                message.isUser ? "justify-end" : "justify-start"
-              } mb-4`}
+              className={`flex ${message.isUser ? "justify-end" : "justify-start"
+                } mb-4`}
             >
               <div className="flex items-start max-w-[80%]">
                 {!message.isUser && (
@@ -154,11 +277,10 @@ export default function ConversationPage() {
 
                 <div className="relative">
                   <div
-                    className={`px-4 py-3 rounded-lg ${
-                      message.isUser
-                        ? "bg-deloitte-green text-black rounded-br-none"
-                        : "bg-secondary text-foreground rounded-bl-none"
-                    }`}
+                    className={`px-4 py-3 rounded-lg ${message.isUser
+                      ? "bg-deloitte-green text-black rounded-br-none"
+                      : "bg-secondary text-foreground rounded-bl-none"
+                      }`}
                   >
                     {message.content}
                     <div className="text-xs opacity-70 mt-1 text-right">
@@ -180,17 +302,27 @@ export default function ConversationPage() {
           ))}
           <div ref={scrollRef} />
         </div>
+        
       </ScrollArea>
 
       <div className="border-t border-border p-4">
+      {maxQuestions <= 0 && (
+          <div className=" fixed bottom-4 right-4 z-10">
+            <Button
+              className="bg-black text-white hover:bg-gray-800"
+              onClick={() => router.push("/dashboard")}
+            >
+              Back to Dashboard
+            </Button>
+          </div>
+        )}
         <div className="max-w-4xl mx-auto flex items-end gap-2">
           <Button
             variant="outline"
             size="icon"
             onClick={toggleSpeaker}
-            className={`${
-              !isSpeakerOn ? "bg-destructive text-destructive-foreground" : ""
-            }`}
+            className={`${!isSpeakerOn ? "bg-destructive text-destructive-foreground" : ""
+              }`}
           >
             {isSpeakerOn ? (
               <Volume2 className="h-5 w-5" />
@@ -205,15 +337,15 @@ export default function ConversationPage() {
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={handleKeyDown}
+              disabled={isLoading}
             />
           </div>
           <Button
             variant="outline"
             size="icon"
             onClick={toggleMicrophone}
-            className={`${
-              isRecording ? "bg-destructive text-destructive-foreground" : ""
-            }`}
+            className={`${isRecording ? "bg-destructive text-destructive-foreground" : ""
+              }`}
           >
             {isRecording ? (
               <MicOff className="h-5 w-5" />
@@ -225,7 +357,7 @@ export default function ConversationPage() {
             className="bg-deloitte-green hover:bg-deloitte-green/90 text-black"
             size="icon"
             onClick={handleSendMessage}
-            disabled={!inputValue.trim()}
+            disabled={!inputValue.trim() && isLoading}
           >
             <Send className="h-5 w-5" />
           </Button>
