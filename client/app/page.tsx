@@ -3,9 +3,11 @@
 import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import AuthModal from "@/components/AuthModal";
+import { useAuth } from "@/context/AuthContext";
 
 const Index: React.FC = () => {
   const [scrollY, setScrollY] = useState(0);
+  const {signInModalVisible, setSignInModalVisible} = useAuth();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -81,7 +83,8 @@ const Index: React.FC = () => {
 
             <Button
               variant="outline"
-              className="bg-white text-black hover:bg-white/90 rounded-full px-6"
+              className="bg-white text-black hover:bg-white/90 rounded-full px-6 cursor-pointer"
+              onClick={() => setSignInModalVisible(true)}
             >
               Sign up
             </Button>

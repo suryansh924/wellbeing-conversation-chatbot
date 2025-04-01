@@ -41,11 +41,11 @@ async function checkEmployeeId(employeeId: string): Promise<boolean> {
 }
 
 export default function AuthModal() {
-  const { signIn, signUp, signInWithGoogle, signInWithTwitter, fetchEmployeeProfile, setIsLogged } = useAuth();
+  const { signIn, signUp, signInWithGoogle,signInWithTwitter, fetchEmployeeProfile , setIsLogged,setSignInModalVisible,signInModalVisible} = useAuth();
   const router = useRouter();
 
   // Modal open state.
-  const [open, setOpen] = React.useState(false);
+  // const [open, setSignInModalVisible] = React.useState(false);
   // Mode can be "login" or "register".
   const [mode, setMode] = React.useState<"login" | "register">("login");
   // Registration step: "checkId" or "registerForm"
@@ -146,7 +146,7 @@ export default function AuthModal() {
       setMode("login");
       setRegisterStep("checkId");
     }
-    setOpen(isOpen);
+    setSignInModalVisible(isOpen);
   };
 
   // After successful login or registration, fetch the employee profile
@@ -171,7 +171,6 @@ export default function AuthModal() {
     const result = loginSchema.safeParse(LoginformData);
     console.log(result);
     if (result.success) {
-      console.log("form submitted");
       try {
         await signIn(LoginformData.email, LoginformData.password);
         const res = await axios.post("http://127.0.0.1:8000/api/user/login", {
@@ -183,18 +182,17 @@ export default function AuthModal() {
         setIsLogged(true)
         await handlePostAuth();
         setOpen(false);
+        setSignInModalVisible(false);
       } catch (err) {
         console.log(err);
       }
-
     } else {
       const newError = { email: 0, password: 0 };
       result.error.errors.forEach(err => {
         if (err.path.includes("email")) newError.email = 1;
         if (err.path.includes("password")) newError.password = 1;
       });
-      setLoginErrors(newError);
-    }
+    } 
   };
 
   // Handle employee ID verification for registration.
@@ -247,7 +245,6 @@ export default function AuthModal() {
       } finally {
         setLoading(false);
       }
-
     } else {
       const newError = {
         employeeId: 0,
@@ -571,3 +568,7 @@ export default function AuthModal() {
       </Dialog>
     );
   }
+function setOpen(arg0: boolean) {
+  throw new Error('Function not implemented.');
+}
+
