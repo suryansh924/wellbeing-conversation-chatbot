@@ -4,7 +4,7 @@ from datetime import timedelta
 # import firebase_admin
 # from firebase_admin import auth, credentials
 
-from database.models import Master
+from database.models import Master, HRUser
 from database.conn import SessionLocal
 from pydantic import BaseModel, EmailStr
 from typing import List
@@ -53,6 +53,14 @@ class OAuthUser(BaseModel):
     name: str
     isRegistration: bool
 
+class HRLoginRequest(BaseModel):
+    email: str
+    password: str
+
+class HRLoginResponse(BaseModel):
+    access_token: str
+    token_type: str
+
 # Function to generate a JWT token with employee id as payload
 def create_access_token(data: dict, expires_delta: timedelta = None):
     to_encode = data.copy()
@@ -71,14 +79,13 @@ class UserResponse(BaseModel):
     is_selected: bool
     sentimental_score: int
     shap_values: List[str]
-    vibe_score: int
 
     class Config:
         orm_mode = True
     
 @router.post("/login")
 def login(user: LoginUser, db: Session = Depends(get_db)):
-    db_user = db.query(Master).filter(Master.email == user.email).first()
+    db_user = db.query(Master).filter(Master.employee_email == user.email).first()
     if not db_user:
         raise HTTPException(status_code=400, detail="User does not exist")
     token= create_access_token(data={"emp_id": db_user.employee_id})
@@ -88,7 +95,7 @@ def login(user: LoginUser, db: Session = Depends(get_db)):
 @router.post("/oauth")
 def oauth(user: OAuthUser, db: Session = Depends(get_db)):
     if not user.isRegistration:
-        db_user = db.query(Master).filter(Master.email == user.email).first()
+        db_user = db.query(Master).filter(Master.employee_email == user.email).first()
         if not db_user:
             raise HTTPException(status_code=400, detail="User does not exist")
         token= create_access_token(data={"emp_id": db_user.employee_id})
@@ -108,7 +115,7 @@ def oauth(user: OAuthUser, db: Session = Depends(get_db)):
                 detail="This employee is already registered."
             )
         
-        check_email = db.query(Master).filter(Master.email == user.email).first()
+        check_email = db.query(Master).filter(Master.employee_email == user.email).first()
         if check_email:
             raise HTTPException(
                 status_code=400,
@@ -157,7 +164,7 @@ def register(user: RegisterUser, db: Session = Depends(get_db)):
             status_code=400,
             detail="This employee is already registered."
         )
-    check_email = db.query(Master).filter(Master.email == user.email).first()
+    check_email = db.query(Master).filter(Master.employee_email == user.email).first()
     if check_email:
         raise HTTPException(
                 status_code=400,
@@ -178,19 +185,56 @@ def verify_user(token: str,db: Session = Depends(get_db)) -> str:
     """
     try:
         decoded_claims = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        emp_id= decoded_claims.get("emp_id")
-        if not emp_id:
-            raise HTTPException(status_code=401, detail="Authentication failed")
-        else:
-            user= db.query(Master).filter(Master.employee_id == emp_id).first()
-            if not user:
-                raise HTTPException(status_code=401, detail="Authentication failed")
-        return emp_id
-    except Exception as e:
-        raise HTTPException(status_code=401, detail="Authentication failed")
+        emp_id = decoded_claims.get("emp_id")
+        hr_id = decoded_claims.get("hr_email")
+        if emp_id:
+            return {"user_type": "employee", "user_id": emp_id}
+        
+        if hr_id:
+            return {"user_type": "hr", "user_id": hr_id}
+        
+        raise HTTPException(status_code=401, detail="Invalid token")
+        
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token has expired")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Invalid token")
 
 
-@router.get("/employee", response_model=UserResponse)
-def get_employee(user_id: str = Depends(verify_user), db: Session = Depends(get_db)):
-    user= db.query(Master).filter(Master.employee_id == user_id).first()
+@router.get("/employee")
+def get_employee(authorization: str = Header(...), db: Session = Depends(get_db)):
+    token = authorization.split(" ")[1]
+    
+    user_id = verify_user(token)
+    
+    # Fetch user from the database
+    user = db.query(Master).filter(Master.employee_id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
     return user
+
+
+@router.post("/hr-login")
+def hr_login(request: HRLoginRequest, db: Session = Depends(get_db)):
+    hr_user = db.query(HRUser).filter(HRUser.email == request.email).first()
+    if not hr_user or hr_user.password != request.password:
+        # Simple password check
+        raise HTTPException(status_code=400, detail="Invalid email or password")
+
+    # Create the JWT token for the authenticated HR user
+    token = create_access_token(data={"hr_email": hr_user.email})
+
+    return {"token": token, "role": hr_user.role}
+
+
+@router.get("/hr")
+def get_hr(authorization: str = Header(...), db: Session = Depends(get_db)):
+    token = authorization.split(" ")[1]
+    
+    hr_id = verify_user(token)
+    
+    # Fetch user from the database
+    hr = db.query(HRUser).filter(HRUser.email == hr_id).first()
+    if not hr:
+        raise HTTPException(status_code=404, detail="User not found")
+    return hr

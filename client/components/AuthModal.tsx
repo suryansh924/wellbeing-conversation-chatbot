@@ -41,7 +41,14 @@ async function checkEmployeeId(employeeId: string): Promise<boolean> {
 }
 
 export default function AuthModal() {
-  const { signIn, signUp, signInWithGoogle,signInWithTwitter, fetchEmployeeProfile , setIsLogged,setSignInModalVisible,signInModalVisible} = useAuth();
+  const {
+    signIn,
+    signUp,
+    signInWithGoogle,
+    signInWithTwitter,
+    fetchEmployeeProfile,
+    setIsLogged,setSignInModalVisible,signInModalVisible,
+  } = useAuth();
   const router = useRouter();
 
   // Modal open state.
@@ -155,7 +162,7 @@ export default function AuthModal() {
   const handlePostAuth = async () => {
     try {
       const profile = await fetchEmployeeProfile();
-      if (profile.isFlagged) {
+      if (profile.is_selected) {
         router.push("/conversation");
       } else {
         router.push("/dashboard");
