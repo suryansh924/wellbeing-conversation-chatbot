@@ -32,6 +32,7 @@ interface AuthContextType {
   user: any;
   employeeData: Employee | null;
   isLogged: boolean;
+  signInModalVisible: boolean;  
   setIsLogged: (isLogged: boolean) => void;
   setEmployeeData: (employee: Employee) => void;
   signIn: (email: string, password: string) => Promise<any>;
@@ -39,7 +40,9 @@ interface AuthContextType {
   signInWithGoogle: () => Promise<any>;
   logout: () => Promise<void>;
   signInWithTwitter: () => Promise<any>;
+  setSignInModalVisible: (visible: boolean) => void;
   fetchEmployeeProfile: () => Promise<Employee>;
+
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -48,7 +51,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<any>(null);
   const [isLogged, setIsLogged] = useState(false);
   const [employeeData, setEmployeeData] = useState<Employee | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [signInModalVisible, setSignInModalVisible] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -129,6 +133,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user,
         employeeData,
         isLogged,
+        signInModalVisible,
         setIsLogged,
         setEmployeeData,
         signInWithTwitter,
@@ -136,6 +141,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         signUp,
         signInWithGoogle,
         logout,
+        setSignInModalVisible,
         fetchEmployeeProfile,
       }}
     >

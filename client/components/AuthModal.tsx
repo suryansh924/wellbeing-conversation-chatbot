@@ -41,11 +41,11 @@ async function checkEmployeeId(employeeId: string): Promise<boolean> {
 }
 
 export default function AuthModal() {
-  const { signIn, signUp, signInWithGoogle,signInWithTwitter, fetchEmployeeProfile , setIsLogged} = useAuth();
+  const { signIn, signUp, signInWithGoogle,signInWithTwitter, fetchEmployeeProfile , setIsLogged,setSignInModalVisible,signInModalVisible} = useAuth();
   const router = useRouter();
 
   // Modal open state.
-  const [open, setOpen] = React.useState(false);
+  // const [open, setSignInModalVisible] = React.useState(false);
   // Mode can be "login" or "register".
   const [mode, setMode] = React.useState<"login" | "register">("login");
   // Registration step: "checkId" or "registerForm"
@@ -84,7 +84,7 @@ export default function AuthModal() {
       setMode("login");
       setRegisterStep("checkId");
     }
-    setOpen(isOpen);
+    setSignInModalVisible(isOpen);
   };
 
   // After successful login or registration, fetch the employee profile
@@ -116,7 +116,7 @@ export default function AuthModal() {
       localStorage.setItem("access_token",token)
       setIsLogged(true)
       await handlePostAuth();
-      setOpen(false);
+      setSignInModalVisible(false);
     } catch (err: any) {
       setError(err.message);
     }
@@ -162,7 +162,7 @@ export default function AuthModal() {
       localStorage.setItem("access_token",token)
       setIsLogged(true)
       await handlePostAuth();
-      setOpen(false);
+      setSignInModalVisible(false);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -187,7 +187,7 @@ export default function AuthModal() {
       localStorage.setItem("access_token",token)
       setIsLogged(true)
       await handlePostAuth();
-      setOpen(false);
+      setSignInModalVisible(false);
     } catch (err: any) {
       setError(err.message);
     }
@@ -209,14 +209,14 @@ export default function AuthModal() {
       localStorage.setItem("access_token",token)
       setIsLogged(true)
       await handlePostAuth();
-      setOpen(false);
+      setSignInModalVisible(false);
     } catch (err: any) {
       setError(err.message);
     }
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
+    <Dialog open={signInModalVisible} onOpenChange={handleOpenChange}>
       {/* Trigger button */}
       <DialogTrigger asChild>
         <Button>Get Started</Button>
@@ -236,7 +236,7 @@ export default function AuthModal() {
                 type="button"
                 onClick={() => handleGoogleSignIn()}
                 variant="outline"
-                className="w-full bg-gray-200 text-black hover:bg-gray-300"
+                className="w-full bg-gray-200 text-black hover:bg-gray-300 cursor-pointer"
               >
                 Sign in with Google{" "}
                 <FcGoogle className="inline ml-2" size={20} />
@@ -245,7 +245,7 @@ export default function AuthModal() {
                 type="button"
                 onClick={() => handleTwitterSignIn()}
                 variant="outline"
-                className="w-full bg-gray-200 text-black hover:bg-gray-300"
+                className="w-full bg-gray-200 text-black hover:bg-gray-300 cursor-pointer"
               >
                 Sign in with Twitter{" "}
                 <FcGoogle className="inline ml-2" size={20} />
@@ -292,7 +292,7 @@ export default function AuthModal() {
             {error && <p className="text-red-500 text-sm">{error}</p>}
 
             <DialogFooter className="mt-4">
-              <Button type="submit" className="w-full">
+              <Button type="submit" className="w-full cursor-pointer">
                 Login
               </Button>
             </DialogFooter>
@@ -332,7 +332,7 @@ export default function AuthModal() {
             {error && <p className="text-red-500 text-sm">{error}</p>}
 
             <DialogFooter className="mt-4">
-              <Button type="submit" disabled={loading} className="w-full">
+              <Button type="submit" disabled={loading} className="w-full  cursor-pointer">
                 {loading ? "Verifying..." : "Verify Employee ID"}
               </Button>
             </DialogFooter>
@@ -361,9 +361,18 @@ export default function AuthModal() {
                 type="button"
                 onClick={() => handleGoogleSignIn(true)}
                 variant="outline"
-                className="w-full bg-gray-200 text-black hover:bg-gray-300"
+                className="w-full bg-gray-200 text-black hover:bg-gray-300  cursor-pointer"
               >
                 Register with Google{" "}
+                <FcGoogle className="inline ml-2" size={20} />
+              </Button>
+              <Button
+                type="button"
+                onClick={() => handleTwitterSignIn(true)}
+                variant="outline"
+                className="w-full bg-gray-200 text-black hover:bg-gray-300  cursor-pointer"
+              >
+                Register with Twitter{" "}
                 <FcGoogle className="inline ml-2" size={20} />
               </Button>
 
@@ -435,7 +444,7 @@ export default function AuthModal() {
               {error && <p className="text-red-500 text-sm">{error}</p>}
 
               <DialogFooter className="mt-4">
-                <Button type="submit" disabled={loading} className="w-full">
+                <Button type="submit" disabled={loading} className="w-full  cursor-pointer">
                   {loading ? "Registering..." : "Complete Registration"}
                 </Button>
               </DialogFooter>
