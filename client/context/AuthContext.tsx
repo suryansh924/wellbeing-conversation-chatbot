@@ -150,12 +150,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const fetchEmployeeProfile = async () => {
     try {
       const token = localStorage.getItem("access_token");
+      console.log(token)
       const response = await fetch("http://127.0.0.1:8000/api/user/employee", {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
+        credentials: "include",
       });
 
       if (!response.ok) {
@@ -164,7 +166,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const data = await response.json();
       setEmployeeData(data);
-      console.log(data);
       return data;
     } catch (error) {
       console.error("Error fetching employee profile:", error);

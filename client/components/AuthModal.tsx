@@ -144,9 +144,17 @@ export default function AuthModal() {
     }
   };
 
-  // Reset states when modal closes.
+  // Reset states when modal closes.setRegEmployeeId
   const handleOpenChange = (isOpen: boolean) => {
     if (!isOpen) {
+      setLoginEmail("");
+      setLoginPassword("");
+      ("");
+      setRegName("");
+      setRegEmail("");
+      setRegPassword("");
+      setRegConfirmPassword("");
+      setError("");
       setMode("login");
       setRegisterStep("checkId");
     }
@@ -160,7 +168,7 @@ export default function AuthModal() {
     try {
       const profile = await fetchEmployeeProfile();
       if (profile.is_selected) {
-        router.push("/conversation");
+        router.push("/conversation/");
       } else {
         router.push("/dashboard");
       }

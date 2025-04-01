@@ -202,17 +202,24 @@ def verify_user(token: str,db: Session = Depends(get_db)) -> str:
 
 
 @router.get("/employee")
-def get_employee(authorization: str = Header(...), db: Session = Depends(get_db)):
-    token = authorization.split(" ")[1]
-    
-    user_id = verify_user(token)
-    
+def get_employee(authorization: str = Header(..., convert_underscores=False), db: Session = Depends(get_db)):
+    """
+    Fetches the employee details using the token.
+    """
+    try:
+        token = authorization.split(" ")[1]  # Extract token from "Bearer <token>"
+    except IndexError:
+        raise HTTPException(status_code=401, detail="Invalid Authorization header format")
+
+    user_data = verify_user(token)  
+    user_id = user_data["user_id"]  # Extract only the user_id
+
     # Fetch user from the database
     user = db.query(Master).filter(Master.employee_id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    return user
 
+    return user
 
 @router.post("/hr-login")
 def hr_login(request: HRLoginRequest, db: Session = Depends(get_db)):
