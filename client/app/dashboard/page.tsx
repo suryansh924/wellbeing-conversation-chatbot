@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Calendar, MessageSquare, Clock } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
 // import ConversationListItem from "@/components/history/ConversationListItem";
 
 export interface Conversation {
@@ -32,24 +33,25 @@ export interface Conversation {
 
 export default function DashboardPage() {
   const router = useRouter();
+  const { fetchEmployeeProfile } = useAuth();
   const [pastConversations, setPastConversations] = useState<Conversation[]>(
     []
   );
 
   useEffect(() => {
     // Check if user is authenticated
-    const isAuthenticated = localStorage.getItem("isAuthenticated");
-    if (!isAuthenticated) {
-      router.push("/");
-      return;
+    async function checkProfile() {
+      try {
+        const profile = await fetchEmployeeProfile();
+        if (!profile) {
+          router.push("/");
+        }
+      } catch (error) {
+        console.error("Error fetching profile", error);
+        router.push("/");
+      }
     }
-
-    // If user is flagged, redirect to conversation page.
-    const isUserFlagged = localStorage.getItem("isUserFlagged");
-    if (isUserFlagged === "true") {
-      router.push("/conversation");
-      return;
-    }
+    checkProfile();
 
     // Simulate fetching past conversations.
     setTimeout(() => {

@@ -3,9 +3,12 @@
 import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import AuthModal from "@/components/AuthModal";
+import { useAuth } from "@/context/AuthContext";
+import HrAuthModal from "@/components/HrAuthModal";
 
 const Index: React.FC = () => {
   const [scrollY, setScrollY] = useState(0);
+  const {signInModalVisible, setSignInModalVisible} = useAuth();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -81,7 +84,8 @@ const Index: React.FC = () => {
 
             <Button
               variant="outline"
-              className="bg-white text-black hover:bg-white/90 rounded-full px-6"
+              className="bg-white text-black hover:bg-white/90 rounded-full px-6 cursor-pointer"
+              onClick={() => setSignInModalVisible(true)}
             >
               Sign up
             </Button>
@@ -101,7 +105,10 @@ const Index: React.FC = () => {
                 designed to monitor employee wellbeing, track mental health, and
                 foster a positive workplace culture.
               </p>
-              <AuthModal />
+              <div className="flex gap-10">
+                <AuthModal />
+                <HrAuthModal />
+              </div>
             </div>
 
             {/* dashboard preview */}
