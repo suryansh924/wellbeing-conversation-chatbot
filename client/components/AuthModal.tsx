@@ -45,7 +45,7 @@ export default function AuthModal() {
   const router = useRouter();
 
   // Modal open state.
-  // const [open, setSignInModalVisible] = React.useState(false);
+  const [open, setOpen] = React.useState(false);
   // Mode can be "login" or "register".
   const [mode, setMode] = React.useState<"login" | "register">("login");
   // Registration step: "checkId" or "registerForm"
@@ -147,6 +147,7 @@ export default function AuthModal() {
       setRegisterStep("checkId");
     }
     setSignInModalVisible(isOpen);
+    setOpen(!open);
   };
 
   // After successful login or registration, fetch the employee profile
@@ -568,7 +569,4 @@ export default function AuthModal() {
       </Dialog>
     );
   }
-function setOpen(arg0: boolean) {
-  throw new Error('Function not implemented.');
-}
 
