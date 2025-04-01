@@ -70,6 +70,30 @@ export default function AuthModal() {
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState("");
 
+  //Zod vaidation
+  
+    const loginSchema = z.object({
+      email: z.string().regex(/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/).max(50),
+      password: z.string().regex(
+        /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$/,
+        "Password must contain at least 8 characters, including letters, numbers, and special characters"
+      ).max(20),
+    });
+    const registerSchema = z.object({
+      employeeId: z.string().max(50).min(1),
+      name: z.string().max(50).min(1),
+      email: z.string().regex(/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/).max(50),
+      password: z.string().regex(
+        /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$/,
+        "Password must contain at least 8 characters, including letters, numbers, and special characters"
+      ).max(20),
+      confirmPassword: z.string().max(20),
+    }).refine((data) => data.password === data.confirmPassword, {
+      message: "Passwords do not match",
+      path: ["confirmPassword"],
+    });
+
+
   // Reset states when modal closes.
   const handleOpenChange = (isOpen: boolean) => {
     if (!isOpen) {
