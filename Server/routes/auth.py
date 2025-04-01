@@ -172,16 +172,22 @@ def register(user: RegisterUser, db: Session = Depends(get_db)):
     access_token = create_access_token(data={"emp_id": user.emp_id})
     return {"token": access_token}
 
-def verify_user(token: str):
+def verify_user(token: str,db: Session = Depends(get_db)) -> str:
     """
     Verifies the JWT and returns the decoded claims.
     """
     try:
         decoded_claims = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         emp_id= decoded_claims.get("emp_id")
+        if not emp_id:
+            raise HTTPException(status_code=401, detail="Authentication failed")
+        else:
+            user= db.query(Master).filter(Master.employee_id == emp_id).first()
+            if not user:
+                raise HTTPException(status_code=401, detail="Authentication failed")
         return emp_id
     except Exception as e:
-        raise HTTPException(status_code=401, detail="Invalid token")
+        raise HTTPException(status_code=401, detail="Authentication failed")
 
 
 @router.get("/employee", response_model=UserResponse)
