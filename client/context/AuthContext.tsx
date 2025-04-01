@@ -16,9 +16,7 @@ import {
   GoogleAuthProvider,
   signInWithPopup,
   TwitterAuthProvider,
-  updateProfile,
 } from "firebase/auth";
-import axios from "axios";
 import { app } from "@/firebase/config";
 
 const auth = getAuth(app);
@@ -28,7 +26,6 @@ export interface Employee {
   name: string;
   email: string;
   isFlagged: boolean;
-  // add other properties as needed (e.g. shap values, etc.)
 }
 
 interface AuthContextType {
@@ -55,67 +52,75 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const fetchData = async () => {
-      const token = typeof window !== "undefined" && localStorage.getItem("access_token");
-      if (token) {
-        setIsLogged(true);
-        await fetchEmployeeProfile();
-      } 
+      try {
+        const token =
+          typeof window !== "undefined" && localStorage.getItem("access_token");
+        if (token) {
+          setIsLogged(true);
+          await fetchEmployeeProfile();
+        }
+      } catch (error) {
+        console.error("Error fetching employee profile:", error);
+      } finally {
+        setLoading(false); // ✅ Ensure loading state is updated
+      }
     };
     fetchData();
   }, []);
-  
 
   const signIn = async (email: string, password: string) => {
-    return signInWithEmailAndPassword(auth, email, password);
-    
-  };
-
-  const signUp = async (email: string, password: string, name: string) => {
-    const userCredential = await createUserWithEmailAndPassword(
-      auth,
-      email,
-      password
-    );
-    // Update the user's display name
-    // await updateProfile(userCredential.user, { displayName: name });
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    setUser(userCredential.user);
     return userCredential;
   };
 
-  const signInWithGoogle = async() => {
+  const signUp = async (email: string, password: string, name: string) => {
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    setUser(userCredential.user);
+    return userCredential;
+  };
+
+  const signInWithGoogle = async () => {
     const provider = new GoogleAuthProvider();
-    const res=await signInWithPopup(auth, provider);
-    const user=res.user;
-    return user;
+    const res = await signInWithPopup(auth, provider);
+    setUser(res.user);
+    return res.user;
   };
-  const signInWithTwitter = async() => {
+
+  const signInWithTwitter = async () => {
     const provider = new TwitterAuthProvider();
-    const res=await signInWithPopup(auth, provider);
-    const user=res.user;
-    return user;
-  }
-
-  const logout = () => {
-    return signOut(auth);
+    const res = await signInWithPopup(auth, provider);
+    setUser(res.user);
+    return res.user;
   };
 
-  // Fetch additional employee details from your backend.
+  const logout = async () => {
+    await signOut(auth);
+    setUser(null);
+    setIsLogged(false);
+  };
+
   const fetchEmployeeProfile = async (): Promise<Employee> => {
-    // You might need to send an auth token or user id to fetch the profile
-    const response = await fetch("http://127.0.0.1:8000/api/user/employee", {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${localStorage.getItem("access_token")}`,
-        // You can include an authorization header if your backend requires it
-      },
-    });
-    if (!response.ok) {
-      throw new Error("Failed to fetch employee profile");
+    try {
+      const response = await fetch("http://127.0.0.1:8000/api/user/employee", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch employee profile");
+      }
+
+      const data = await response.json();
+      setEmployeeData(data);
+      return data;
+    } catch (error) {
+      console.error("Failed to fetch employee data:", error);
+      throw error;
     }
-    const data = await response.json();
-    setEmployeeData(data);
-    console.log(data);
-    return data;
   };
 
   return (
@@ -134,14 +139,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         fetchEmployeeProfile,
       }}
     >
-      {!loading && children}
+      {!loading ? children : <p>Loading...</p>}
     </AuthContext.Provider>
   );
 }
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (context === undefined) {
+  if (!context) {
     throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
