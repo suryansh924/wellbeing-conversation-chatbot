@@ -179,7 +179,7 @@ def register(user: RegisterUser, db: Session = Depends(get_db)):
     access_token = create_access_token(data={"emp_id": user.emp_id})
     return {"token": access_token}
 
-def verify_user(token: str):
+def verify_user(token: str,db: Session = Depends(get_db)) -> str:
     """
     Verifies the JWT and returns the decoded claims.
     """
@@ -214,7 +214,7 @@ def get_employee(authorization: str = Header(...), db: Session = Depends(get_db)
     return user
 
 
-@router.post("/hr-login", response_model=HRLoginResponse)
+@router.post("/hr-login")
 def hr_login(request: HRLoginRequest, db: Session = Depends(get_db)):
     hr_user = db.query(HRUser).filter(HRUser.email == request.email).first()
     if not hr_user or hr_user.password != request.password:
