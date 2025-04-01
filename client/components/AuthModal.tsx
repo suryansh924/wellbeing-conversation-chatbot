@@ -77,12 +77,12 @@ export default function AuthModal() {
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState("");
 
-  // Reset states when modal closes.
+  // Reset states when modal closes.setRegEmployeeId
   const handleOpenChange = (isOpen: boolean) => {
     if (!isOpen) {
       setLoginEmail("");
       setLoginPassword("");
-      setRegEmployeeId("");
+      ("");
       setRegName("");
       setRegEmail("");
       setRegPassword("");
@@ -100,7 +100,7 @@ export default function AuthModal() {
     try {
       const profile = await fetchEmployeeProfile();
       if (profile.is_selected) {
-        router.push("/conversation");
+        router.push("/conversation/");
       } else {
         router.push("/dashboard");
       }

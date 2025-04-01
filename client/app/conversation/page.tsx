@@ -8,6 +8,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Mic, MicOff, Send, Volume2, VolumeX } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import axios from "axios";
+import { useAuth } from "@/context/AuthContext"; // Assuming you have an AuthContext
+
 
 interface Message {
   id: string;
@@ -20,6 +22,8 @@ export default function ConversationPage() {
 
   const server = "http://127.0.0.1:8000"
 
+  
+  const { employeeData }  = useAuth();
   const router = useRouter();
   const [employee_name, setEmployee_Name] = useState("");
   const [employee_id, setEmployee_Id] = useState("");
@@ -39,13 +43,21 @@ export default function ConversationPage() {
   const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  // useEffect(() => {
+  //   const token = localStorage.getItem("token");
+  //   if (!token) {
+  //     router.push("/");
+  //   }
+  // }, []);
 
   useEffect(() => {
-    // Start a new conversation when the component is mounted
-    setEmployee_Id("EMP0001");
-    setEmployee_Name("Veena");
-    setShap(["performance", "leave"]);
-  }, []);
+    if (employeeData) { // Ensure employeeData is available
+      console.log(employeeData)
+      setEmployee_Id(employeeData.employee_id);
+      setEmployee_Name(employeeData.employee_name);
+      setShap(employeeData.shap_values);
+    }
+  }, [employeeData]); // Run effect whenever employeeData updates
 
   useEffect(() => {
     if (employee_id && employee_name && shap.length > 0) {
@@ -200,10 +212,10 @@ export default function ConversationPage() {
       setMessages((prev) => [...prev, botMessage]);
 
       // Optionally, speak the bot's response
-      // if (isSpeakerOn) {
-      //   const speech = new SpeechSynthesisUtterance(botMessage.content);
-      //   window.speechSynthesis.speak(speech);
-      // }
+      if (isSpeakerOn) {
+        const speech = new SpeechSynthesisUtterance(botMessage.content);
+        window.speechSynthesis.speak(speech);
+      }
       if (maxQuestions <= 0) {
         await provideInsights();
         generateReport();

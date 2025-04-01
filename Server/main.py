@@ -13,18 +13,20 @@ from database.models import Base
 from database.conn import engine
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],  # Replace with frontend URL in production
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 app.include_router(chats.router, prefix="/api/conversation", tags=["chats"])
 app.include_router(check_database.router, prefix="/api/data", tags=["database"])
 app.include_router(auth.router, prefix="/api/user", tags=["auth"])
 app.include_router(report.router, prefix="/api/report", tags=["report"])
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # Replace with frontend URL in production
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 @app.on_event("startup")
 def on_startup():
     Base.metadata.create_all(bind=engine)
