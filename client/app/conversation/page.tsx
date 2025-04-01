@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Mic, MicOff, Send, Volume2, VolumeX } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useAuth } from "@/context/AuthContext";
 
 interface Message {
   id: string;
@@ -17,6 +18,7 @@ interface Message {
 
 export default function ConversationPage() {
   const router = useRouter();
+  const { fetchEmployeeProfile } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [isRecording, setIsRecording] = useState(false);
@@ -24,18 +26,19 @@ export default function ConversationPage() {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Check if user is authenticated and flagged
-    // Replace with your authentication logic.
-    const isAuthenticated = localStorage.getItem("isAuthenticated");
-    if (!isAuthenticated) {
-      router.push("/");
-      return;
+    async function checkProfile() {
+      try {
+        const profile = await fetchEmployeeProfile();
+        // If the user is not flagged, send them to the dashboard.
+        if (!profile.is_selected) {
+          router.push("/dashboard");
+        }
+      } catch (err) {
+        // If there's an error (or no user), redirect to login.
+        router.push("/");
+      }
     }
-    const isUserFlagged = localStorage.getItem("isUserFlagged");
-    if (isUserFlagged !== "true") {
-      router.push("/dashboard");
-      return;
-    }
+    checkProfile();
 
     // Add an initial welcome message.
     setMessages([

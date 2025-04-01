@@ -36,7 +36,7 @@ class HRUser(Base):
     
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String, unique=True, index=True, nullable=False)
-    # password = Column(String, nullable=False)                           # Hashed password.
+    password = Column(String, nullable=False)                           # Hashed password.
     role = Column(String, default="admin")                              # Default: "admin".  
 
 

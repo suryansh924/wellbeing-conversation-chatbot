@@ -22,10 +22,19 @@ import { app } from "@/firebase/config";
 const auth = getAuth(app);
 
 export interface Employee {
-  id: string;
-  name: string;
-  email: string;
-  isFlagged: boolean;
+  employee_id: string;
+  employee_name: string;
+  employee_email: string;
+  role: string;
+  is_selected: boolean;
+  sentimental_score: number;
+  shap_values: string[];
+}
+
+export interface HRUser {
+  hr_id: string;
+  hr_email: string;
+  role: string;
 }
 
 interface AuthContextType {
@@ -38,6 +47,7 @@ interface AuthContextType {
   signUp: (email: string, password: string, name: string) => Promise<any>;
   signInWithGoogle: () => Promise<any>;
   logout: () => Promise<void>;
+  signInHR: (email: string, password: string) => Promise<any>;
   signInWithTwitter: () => Promise<any>;
   fetchEmployeeProfile: () => Promise<Employee>;
 }
@@ -48,6 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<any>(null);
   const [isLogged, setIsLogged] = useState(false);
   const [employeeData, setEmployeeData] = useState<Employee | null>(null);
+  const [hrData, setHRData] = useState<HRUser | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -57,25 +68,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           typeof window !== "undefined" && localStorage.getItem("access_token");
         if (token) {
           setIsLogged(true);
-          await fetchEmployeeProfile();
+          const userRole = localStorage.getItem("user_role");
+          if (userRole === "HR") {
+            await fetchHRProfile();
+          } else {
+            await fetchEmployeeProfile();
+          }
         }
       } catch (error) {
-        console.error("Error fetching employee profile:", error);
+        console.error("Error fetching user profile:", error);
       } finally {
-        setLoading(false); // ✅ Ensure loading state is updated
+        setLoading(false); // Ensure loading state is updated
       }
     };
     fetchData();
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    const userCredential = await signInWithEmailAndPassword(
+      auth,
+      email,
+      password
+    );
     setUser(userCredential.user);
     return userCredential;
   };
 
   const signUp = async (email: string, password: string, name: string) => {
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const userCredential = await createUserWithEmailAndPassword(
+      auth,
+      email,
+      password
+    );
     setUser(userCredential.user);
     return userCredential;
   };
@@ -94,19 +118,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return res.user;
   };
 
-  const logout = async () => {
-    await signOut(auth);
-    setUser(null);
-    setIsLogged(false);
+  const signInHR = async (email: string, password: string) => {
+    try {
+      const response = await fetch("http://127.0.0.1:8000/api/user/hr-login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Login failed");
+      }
+
+      const data = await response.json();
+      localStorage.setItem("access_token", data.token);
+      localStorage.setItem("role", data.role);
+      setIsLogged(true);
+      await fetchHRProfile();
+      return data;
+    } catch (error) {
+      console.error("HR login failed:", error);
+      throw error;
+    }
   };
 
-  const fetchEmployeeProfile = async (): Promise<Employee> => {
+  const fetchEmployeeProfile = async () => {
     try {
+      const token = localStorage.getItem("access_token");
       const response = await fetch("http://127.0.0.1:8000/api/user/employee", {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+          Authorization: `Bearer ${token}`,
         },
       });
 
@@ -116,11 +161,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const data = await response.json();
       setEmployeeData(data);
+      console.log(data);
       return data;
     } catch (error) {
-      console.error("Failed to fetch employee data:", error);
+      console.error("Error fetching employee profile:", error);
       throw error;
     }
+  };
+
+  const fetchHRProfile = async () => {
+    try {
+      const token = localStorage.getItem("access_token");
+      const response = await fetch("http://127.0.0.1:8000/api/user/hr", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch HR profile");
+      }
+
+      const data = await response.json();
+      setHRData(data);
+      return data;
+    } catch (error) {
+      console.error("Error fetching HR profile:", error);
+      throw error;
+    }
+  };
+
+  const logout = async () => {
+    await signOut(auth);
+    setUser(null);
+    setIsLogged(false);
   };
 
   return (
@@ -136,6 +212,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         signUp,
         signInWithGoogle,
         logout,
+        signInHR,
         fetchEmployeeProfile,
       }}
     >

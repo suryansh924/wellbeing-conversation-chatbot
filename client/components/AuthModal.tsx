@@ -41,7 +41,14 @@ async function checkEmployeeId(employeeId: string): Promise<boolean> {
 }
 
 export default function AuthModal() {
-  const { signIn, signUp, signInWithGoogle,signInWithTwitter, fetchEmployeeProfile , setIsLogged} = useAuth();
+  const {
+    signIn,
+    signUp,
+    signInWithGoogle,
+    signInWithTwitter,
+    fetchEmployeeProfile,
+    setIsLogged,
+  } = useAuth();
   const router = useRouter();
 
   // Modal open state.
@@ -92,7 +99,7 @@ export default function AuthModal() {
   const handlePostAuth = async () => {
     try {
       const profile = await fetchEmployeeProfile();
-      if (profile.isFlagged) {
+      if (profile.is_selected) {
         router.push("/conversation");
       } else {
         router.push("/dashboard");
@@ -108,13 +115,13 @@ export default function AuthModal() {
     setError("");
     try {
       await signIn(loginEmail, loginPassword);
-      const res=await axios.post("http://127.0.0.1:8000/api/user/login",{
-        email:loginEmail,
-      }
-      )
-      const token=res.data.token
-      localStorage.setItem("access_token",token)
-      setIsLogged(true)
+      const res = await axios.post("http://127.0.0.1:8000/api/user/login", {
+        email: loginEmail,
+        password: loginPassword,
+      });
+      const token = res.data.token;
+      localStorage.setItem("access_token", token);
+      setIsLogged(true);
       await handlePostAuth();
       setOpen(false);
     } catch (err: any) {
@@ -152,15 +159,14 @@ export default function AuthModal() {
     setLoading(true);
     try {
       await signUp(regEmail, regPassword, regName);
-      const res=await axios.post("http://127.0.0.1:8000/api/user/register",{
-        email:regEmail,
-        emp_id:regEmployeeId,
-        name:regName
-      }
-      )
-      const token=res.data.token
-      localStorage.setItem("access_token",token)
-      setIsLogged(true)
+      const res = await axios.post("http://127.0.0.1:8000/api/user/register", {
+        email: regEmail,
+        emp_id: regEmployeeId,
+        name: regName,
+      });
+      const token = res.data.token;
+      localStorage.setItem("access_token", token);
+      setIsLogged(true);
       await handlePostAuth();
       setOpen(false);
     } catch (err: any) {
@@ -173,19 +179,18 @@ export default function AuthModal() {
   // Google sign-in handler using Firebase.
   const handleGoogleSignIn = async (isRegistration = false) => {
     try {
-      const user=await signInWithGoogle();
-      const email=user.email;
-      const name=user.displayName;
-      const res=await axios.post("http://127.0.0.1:8000/api/user/oauth",{
-        email:email,
-        emp_id:regEmployeeId,
-        name:name,
-        isRegistration:isRegistration
-      }
-      )
-      const token=res.data.token
-      localStorage.setItem("access_token",token)
-      setIsLogged(true)
+      const user = await signInWithGoogle();
+      const email = user.email;
+      const name = user.displayName;
+      const res = await axios.post("http://127.0.0.1:8000/api/user/oauth", {
+        email: email,
+        emp_id: regEmployeeId,
+        name: name,
+        isRegistration: isRegistration,
+      });
+      const token = res.data.token;
+      localStorage.setItem("access_token", token);
+      setIsLogged(true);
       await handlePostAuth();
       setOpen(false);
     } catch (err: any) {
@@ -195,19 +200,18 @@ export default function AuthModal() {
 
   const handleTwitterSignIn = async (isRegistration = false) => {
     try {
-      const user=await signInWithTwitter();
-      const email=user.email;
-      const name=user.displayName;
-      const res=await axios.post("http://127.0.0.1:8000/api/user/oauth",{
-        email:email,
-        emp_id:regEmployeeId,
-        name:name,
-        isRegistration:isRegistration
-      }
-      )
-      const token=res.data.token
-      localStorage.setItem("access_token",token)
-      setIsLogged(true)
+      const user = await signInWithTwitter();
+      const email = user.email;
+      const name = user.displayName;
+      const res = await axios.post("http://127.0.0.1:8000/api/user/oauth", {
+        email: email,
+        emp_id: regEmployeeId,
+        name: name,
+        isRegistration: isRegistration,
+      });
+      const token = res.data.token;
+      localStorage.setItem("access_token", token);
+      setIsLogged(true);
       await handlePostAuth();
       setOpen(false);
     } catch (err: any) {
@@ -219,7 +223,9 @@ export default function AuthModal() {
     <Dialog open={open} onOpenChange={handleOpenChange}>
       {/* Trigger button */}
       <DialogTrigger asChild>
-        <Button>Get Started</Button>
+        <Button className="bg-white text-black cursor-pointer text-lg font-semibold px-10 py-4 h-auto rounded-full">
+          Get Started
+        </Button>
       </DialogTrigger>
 
       <DialogContent className="sm:max-w-[425px]">
