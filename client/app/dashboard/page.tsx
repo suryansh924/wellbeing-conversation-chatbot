@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,7 +14,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Calendar, MessageSquare, Clock } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-// import ConversationListItem from "@/components/history/ConversationListItem";
+import { Hamburger, MobileMenu } from "@/components/ui/hamburger";
 
 export interface Conversation {
   id: string;
@@ -33,10 +33,12 @@ export interface Conversation {
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { fetchEmployeeProfile } = useAuth();
+  const menuRef = useRef<HTMLDivElement>(null);
+  const { fetchEmployeeProfile, logout, employeeData } = useAuth();
   const [pastConversations, setPastConversations] = useState<Conversation[]>(
     []
   );
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   useEffect(() => {
     // Check if user is authenticated
@@ -148,105 +150,130 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground p-4 md:p-8">
+      <Hamburger
+        isOpen={isMenuOpen}
+        onClick={() => setIsMenuOpen(!isMenuOpen)}
+      />
+      <MobileMenu
+        isOpen={isMenuOpen}
+        onClose={() => setIsMenuOpen(false)}
+        user={employeeData}
+        logout={logout}
+      />
+
       <div className="max-w-5xl mx-auto">
         <header className="text-center mb-12">
           <h1 className="text-3xl md:text-4xl font-bold mb-4 text-gradient">
             Employee Dashboard
           </h1>
-          <div className="glass-morphism py-6 px-4 rounded-lg">
-            <h2 className="text-xl md:text-2xl font-semibold mb-2">
+          <div className="glass-card p-6 rounded-xl max-w-3xl mx-auto">
+            <h2 className="text-xl md:text-2xl font-semibold text-primary-light mb-2">
               No Conversations Scheduled
             </h2>
-            <p className="text-muted-foreground">
+            <p className="text-foreground/80">
               You don't have any well-being check-ins scheduled at this time.
-              Your next check-in will appear here.
             </p>
           </div>
         </header>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card className="bg-secondary text-foreground">
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <Calendar className="mr-2 h-5 w-5" />
-                Next Check-in
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p>Not scheduled yet</p>
-            </CardContent>
-          </Card>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+          <div className="stats-card">
+            <div className="flex items-center gap-4">
+              <Calendar className="stats-icon" />
+              <div>
+                <h3 className="text-foreground/80 text-sm font-medium">
+                  Next Check-in
+                </h3>
+                <p className="text-foreground text-xl font-semibold">
+                  Not scheduled yet
+                </p>
+              </div>
+            </div>
+          </div>
 
-          <Card className="bg-secondary text-foreground">
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <MessageSquare className="mr-2 h-5 w-5" />
-                Total Conversations
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p>{pastConversations.length}</p>
-            </CardContent>
-          </Card>
+          <div className="stats-card">
+            <div className="flex items-center gap-4">
+              <MessageSquare className="stats-icon" />
+              <div>
+                <h3 className="text-foreground/80 text-sm font-medium">
+                  Total Conversations
+                </h3>
+                <p className="text-foreground text-xl font-semibold">
+                  {pastConversations.length}
+                </p>
+              </div>
+            </div>
+          </div>
 
-          <Card className="bg-secondary text-foreground">
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <Clock className="mr-2 h-5 w-5" />
-                Last Activity
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p>
-                {pastConversations.length > 0
-                  ? new Date(
-                      pastConversations[0].lastMessage.timestamp
-                    ).toLocaleDateString()
-                  : "No recent activity"}
-              </p>
-            </CardContent>
-          </Card>
+          <div className="stats-card">
+            <div className="flex items-center gap-4">
+              <Clock className="stats-icon" />
+              <div>
+                <h3 className="text-foreground/80 text-sm font-medium">
+                  Last Activity
+                </h3>
+                <p className="text-foreground text-xl font-semibold">
+                  {pastConversations.length > 0
+                    ? new Date(
+                        pastConversations[0].lastMessage.timestamp
+                      ).toLocaleDateString()
+                    : "No recent activity"}
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <Card className="bg-secondary text-foreground">
-          <CardHeader>
-            <CardTitle>Past Conversations</CardTitle>
-            <CardDescription>
-              Review your previous well-being check-ins
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ScrollArea className="h-[400px] pr-4">
-              {pastConversations.length > 0 ? (
-                <div className="space-y-2">
-                  {pastConversations.map((conversation) => (
-                    <div
-                      key={conversation.id}
-                      className="cursor-pointer hover:bg-background/50 rounded-lg transition-colors"
-                    >
-                      {/* <ConversationListItem conversation={conversation} /> */}
+        <div className="glass-card p-6 rounded-xl">
+          <h2 className="text-xl font-semibold text-primary-light mb-4">
+            Past Conversations
+          </h2>
+          <p className="text-foreground/80 mb-6">
+            Review your previous well-being check-ins
+          </p>
+
+          <ScrollArea className="h-[400px] pr-4">
+            {pastConversations.length > 0 ? (
+              <div className="space-y-4">
+                {pastConversations.map((conversation) => (
+                  <div
+                    key={conversation.id}
+                    className="p-4 hover:bg-primary/90 rounded-lg transition-colors ease-in-out duration-100 cursor-pointer border border-border/30"
+                  >
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h3 className="font-medium text-foreground">
+                          {conversation.name}
+                        </h3>
+                        <p className="text-sm text-foreground/70 mt-1 line-clamp-1">
+                          {conversation.lastMessage.content}
+                        </p>
+                      </div>
+                      <span className="text-xs text-foreground/50">
+                        {new Date(
+                          conversation.lastMessage.timestamp
+                        ).toLocaleDateString()}
+                      </span>
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="flex items-center justify-center h-40">
-                  <p className="text-muted-foreground">
-                    No past conversations found
-                  </p>
-                </div>
-              )}
-            </ScrollArea>
-          </CardContent>
-          <CardFooter>
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={() => router.push("/resources")}
-            >
-              View Well-being Resources
-            </Button>
-          </CardFooter>
-        </Card>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex items-center justify-center h-40">
+                <p className="text-foreground/70">
+                  No past conversations found
+                </p>
+              </div>
+            )}
+          </ScrollArea>
+
+          <Button
+            className="w-full mt-6 bg-primary hover:bg-primary/80 text-background font-medium"
+            onClick={() => router.push("/resources")}
+          >
+            View Well-being Resources
+          </Button>
+        </div>
       </div>
     </div>
   );
