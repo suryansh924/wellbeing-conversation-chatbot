@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, File, UploadFile, Form
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 import requests
@@ -11,12 +11,17 @@ from database.conn import get_db
 from typing import List, Dict
 from datetime import datetime
 from chatgpt import chat_with_gpt4o
+import httpx
+import io
+from fastapi.responses import StreamingResponse
+
 
 from database.models import Conversation,Message
 
 
 load_dotenv()
 API_KEY = os.getenv("GENAI_API_KEY")
+DEEPGRAM_API_KEY = os.getenv("DEEPGRAM_API_KEY")
 BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
 
 router = APIRouter()
@@ -254,3 +259,161 @@ def generate(request: PromptRequest):
         raise e
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")   
+    
+
+@router.post("/transcribe")
+async def transcribe_audio(audio: UploadFile = File(...)):
+    """Convert speech audio to text using Deepgram"""
+    if not DEEPGRAM_API_KEY:
+        raise HTTPException(status_code=500, detail="Deepgram API key not configured")
+
+    
+    try:
+
+        audio_content = await audio.read()
+        # print("Audio content length:", len(audio_content))
+        # Send to Deepgram
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                "https://api.deepgram.com/v1/listen?model=nova-2&smart_format=true",
+                headers={
+                    "Authorization": f"Token {DEEPGRAM_API_KEY}",
+                    "Content-Type": "audio/wav"  # Adjust based on your audio format
+                },
+                content=audio_content
+            )
+            
+            if response.status_code != 200:
+                raise HTTPException(status_code=response.status_code, detail="Failed to transcribe audio")
+            
+            result = response.json()
+
+            transcript = result["results"]["channels"][0]["alternatives"][0]["transcript"]
+            # print("Transcript:", transcript)
+            
+            return {"transcript": transcript}
+    except httpx.RequestError as e:
+        raise HTTPException(status_code=500, detail=f"HTTP error: {str(e)}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error in speech-to-text: {str(e)}")
+    
+
+
+
+# @app.post("/api/text-to-speech")
+# async def text_to_speech(request: TTSRequest):
+#     """
+#     Convert text to speech using Deepgram API
+    
+#     Takes text input and returns audio stream
+#     """
+#     try:
+#         # Set up the request payload for Deepgram API
+#         payload = {
+#             "text": request.text
+#         }
+        
+#         # Set up headers for Deepgram API request
+#         headers = {
+#             "Authorization": f"Token {DEEPGRAM_API_KEY}",
+#             "Content-Type": "application/json"
+#         }
+        
+#         # Make the request to Deepgram
+#         async with httpx.AsyncClient() as client:
+#             response = await client.post(
+#                 f"https://api.deepgram.com/v1/speak?model={request.model}",
+#                 headers=headers,
+#                 json=payload,
+#                 timeout=30.0
+#             )
+            
+#             # Check for successful response
+#             if response.status_code != 200:
+#                 error_message = f"Deepgram TTS API error: {response.status_code}"
+#                 try:
+#                     error_detail = response.json()
+#                     error_message += f" - {error_detail}"
+#                 except:
+#                     pass
+                
+#                 raise HTTPException(
+#                     status_code=response.status_code,
+#                     detail=error_message
+#                 )
+            
+#             # Return the audio stream
+#             return StreamingResponse(
+#                 io.BytesIO(response.content),
+#                 media_type="audio/mp3",
+#                 headers={
+#                     "Content-Disposition": f"attachment; filename=speech.mp3"
+#                 }
+#             )
+    
+#     except httpx.RequestError as e:
+#         raise HTTPException(status_code=500, detail=f"Error communicating with Deepgram: {str(e)}")
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=f"Error processing text-to-speech: {str(e)}")   
+
+#the function will only have a string in the request body
+@router.post("/tts")
+async def text_to_speech(request: PromptRequest):
+    """
+    Convert text to speech using Deepgram API
+    
+    Takes text input and returns audio stream
+    """
+    if not DEEPGRAM_API_KEY:
+        raise HTTPException(status_code=500, detail="Deepgram API key not configured")
+    try:
+        # Set up the request payload for Deepgram API
+        payload = {
+            "text": request.prompt,
+        }
+        
+        # Set up headers for Deepgram API request
+        headers = {
+            "Authorization": f"Token {DEEPGRAM_API_KEY}",
+            "Content-Type": "application/json"
+        }
+        
+        # Make the request to Deepgram
+        # print("Sending request to Deepgram TTS API...",request.prompt)
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                f"https://api.deepgram.com/v1/speak?model=aura-asteria-en",
+                headers=headers,
+                json=payload,
+                timeout=30.0
+            )
+            
+            # Check for successful response
+            if response.status_code != 200:
+                error_message = f"Deepgram TTS API error: {response.status_code}"
+                try:
+                    error_detail = response.json()
+                    error_message += f" - {error_detail}"
+                except:
+                    pass
+                
+                raise HTTPException(
+                    status_code=response.status_code,
+                    detail=error_message
+                )
+            
+            # # Return the audio stream
+            # print("Received response from Deepgram TTS API",response.status_code)
+            # print("Response content:", response.content[:100])
+            return StreamingResponse(
+                io.BytesIO(response.content),
+                media_type="audio/mp3",
+                headers={
+                    "Content-Disposition": f"attachment; filename=speech.mp3"
+                }
+            )
+    
+    except httpx.RequestError as e:
+        raise HTTPException(status_code=500, detail=f"Error communicating with Deepgram: {str(e)}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error processing text-to-speech: {str(e)}")

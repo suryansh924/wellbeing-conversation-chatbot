@@ -18,13 +18,22 @@ const hrDashboard: React.FC = () => {
   const reportsRef = useRef<HTMLDivElement | null>(null);
 
   const router = useRouter();
-  const { isLogged, fetchHRProfile} = useAuth();
+  const { fetchHRProfile, hrData } = useAuth();
 
   useEffect(() => {
-    },
-
+    async function checkAuth() {
+      try {
+        const profile = await fetchHRProfile();
+        if (!profile) {
+          router.push("/");
+        }
+      } catch (error) {
+        console.error("Error fetching profile", error);
+        router.push("/");
+      }
+    }
     checkAuth();
-  }, [isLogged, fetchEmployeeProfile, employeeData, router]);
+  }, [router, hrData]);
 
   useEffect(() => {
     // Simulate loading delay for animations

@@ -9,6 +9,9 @@ import { Mic, MicOff, Send, Volume2, VolumeX } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import axios from "axios";
 import { useAuth } from "@/context/AuthContext"; // Assuming you have an AuthContext
+import Message from "@/components/Conversation/message";
+import { server } from "@/utils";
+import { set } from "zod";
 
 interface Message {
   id: string;
@@ -22,7 +25,7 @@ interface TypingIndicator {
 }
 
 export default function ConversationPage() {
-  const server = "http://127.0.0.1:8000";
+  // const server = "http://127.0.0.1:8000";
 
   const { employeeData } = useAuth();
   const router = useRouter();
@@ -34,17 +37,27 @@ export default function ConversationPage() {
   const [maxQuestions, setMaxQuestions] = useState(6);
 
   const [messages, setMessages] = useState<Message[]>([]);
-  const [chatHistory, setChatHistory] = useState<{ sender_type: string; message: string }[]>([]);
+  const [chatHistory, setChatHistory] = useState<
+    { sender_type: string; message: string }[]
+  >([]);
 
   const [inputValue, setInputValue] = useState("");
   const [isRecording, setIsRecording] = useState(false);
-  const [micPermission, setMicPermission] = useState<"granted" | "denied" | "pending" | "unknown">("unknown");
+  const [micPermission, setMicPermission] = useState<
+    "granted" | "denied" | "pending" | "unknown"
+  >("unknown");
   const [isSpeakerOn, setIsSpeakerOn] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
-  const [isTyping, setIsTyping] = useState<TypingIndicator>({ isActive: false });
+  const [isTyping, setIsTyping] = useState<TypingIndicator>({
+    isActive: false,
+  });
   const scrollRef = useRef<HTMLDivElement>(null);
   const recordingAnimationRef = useRef<NodeJS.Timeout | null>(null);
   const [recordingLevel, setRecordingLevel] = useState(0);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
+  const [isAudioProcessing, setIsAudioProcessing] = useState(false);
 
   useEffect(() => {
     if (employeeData) {
@@ -121,17 +134,17 @@ export default function ConversationPage() {
   }, [isRecording]);
 
   useEffect(() => {
-    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+    if (navigator.mediaDevices) {
       navigator.permissions
         .query({ name: "microphone" as PermissionName })
         .then((permissionStatus) => {
           setMicPermission(
-            permissionStatus.state as "granted" | "denied" | "prompt"
+            permissionStatus.state === "prompt" ? "pending" : (permissionStatus.state as "granted" | "denied")
           );
 
           permissionStatus.onchange = () => {
             setMicPermission(
-              permissionStatus.state as "granted" | "denied" | "prompt"
+              permissionStatus.state === "prompt" ? "pending" : (permissionStatus.state as "granted" | "denied")
             );
           };
         })
@@ -268,52 +281,78 @@ export default function ConversationPage() {
     }
   };
 
-  const toggleMicrophone = () => {
-    // If already recording, stop recording
-    if (isRecording) {
-      setIsRecording(false);
-      return;
-    }
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
 
-    // If not recording, try to start recording
-    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-      setMicPermission("pending"); // Show pending state while waiting for permission
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
 
-      navigator.mediaDevices
-        .getUserMedia({ audio: true })
-        .then((stream) => {
-          console.log("Microphone access granted", stream);
-          setIsRecording(true);
-          setMicPermission("granted");
+      mediaRecorder.start();
+      console.log("Recording started");
 
-          // For demo purposes - in real app, would use actual speech recognition API
-          setTimeout(() => {
-            setInputValue(
-              inputValue
-                ? inputValue + " I'm feeling pretty good today, thanks for asking."
-                : "I'm feeling pretty good today, thanks for asking."
-            );
-            setIsRecording(false);
-          }, 3000);
-
-          // Clean up function to stop audio tracks when recording stops
-          return () => {
-            stream.getTracks().forEach((track) => track.stop());
-          };
-        })
-        .catch((err) => {
-          console.error("Error accessing microphone:", err);
-          setMicPermission("denied");
-          setIsRecording(false);
-        });
-    } else {
-      console.error("Media devices not supported");
-      setMicPermission("denied");
+      setIsRecording(true);
+    } catch (error) {
+      console.error("Error starting recording:", error);
+      alert(
+        "Could not start recording. Please check your microphone permissions."
+      );
     }
   };
 
-  const toggleSpeaker = () => {
-    setIsSpeakerOn((prev) => !prev);
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      setIsRecording(false);
+      console.log("Stopping recording...");
+      mediaRecorderRef.current.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, {
+          type: "audio/wav",
+        });
+        await processAudio(audioBlob);
+    
+        // Release the media recorder
+        mediaRecorderRef.current = null;
+        audioChunksRef.current = [];
+      };
+      mediaRecorderRef.current.stop();
+      console.log("Recording stopped");
+
+    };
+  };
+
+  const processAudio = async (audioBlob: Blob) => {
+    setIsLoading(true);
+    setIsAudioProcessing(true);
+    try {
+      // Convert speech to text
+      const formData = new FormData();
+      formData.append("audio", audioBlob);
+      // console.log("Form Data:", formData);
+      // console.log("audio url", URL.createObjectURL(audioBlob));
+
+      const transcriptionResponse = await axios.post(
+        `${server}/api/conversation/transcribe`,
+        formData,
+        { headers: { "Content-Type": "multipart/form-data" } }
+      );
+
+      const transcribedText = transcriptionResponse.data.transcript;
+      console.log("Transcribed text", transcribedText);
+
+      setInputValue(transcribedText);
+    } catch (error) {
+      console.error("Error processing audio:", error);
+      alert("Error processing your voice. Please try again.");
+    } finally {
+      setIsAudioProcessing(false);
+      setIsLoading(false);
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -322,6 +361,13 @@ export default function ConversationPage() {
       handleSendMessage();
     }
   };
+  useEffect(() => {
+    return () => {
+      if (audioPlayerRef.current) {
+        URL.revokeObjectURL(audioPlayerRef.current.src);
+      }
+    };
+  }, []);
 
   return (
     <div className="flex flex-col h-screen bg-background text-foreground">
@@ -338,45 +384,12 @@ export default function ConversationPage() {
           </div>
 
           {messages.map((message) => (
-            <div
-              key={message.id}
-              className={`flex ${
-                message.isUser ? "justify-end" : "justify-start"
-              } mb-4`}
-            >
-              <div className="flex items-start max-w-[80%]">
-                {!message.isUser && (
-                  <Avatar className="h-10 w-10 mr-3">
-                    <AvatarImage src="/favicon.ico" alt="Bot Avatar" />
-                    <AvatarFallback>DC</AvatarFallback>
-                  </Avatar>
-                )}
-
-                <div className="relative">
-                  <div
-                    className={`px-4 py-3 rounded-lg ${
-                      message.isUser
-                        ? "bg-deloitte-green text-black rounded-br-none"
-                        : "bg-secondary text-foreground rounded-bl-none"
-                    }`}
-                  >
-                    {message.content}
-                    <div className="text-xs opacity-70 mt-1 text-right">
-                      {message.timestamp.toLocaleTimeString([], {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </div>
-                  </div>
-                </div>
-
-                {message.isUser && (
-                  <Avatar className="h-10 w-10 ml-3">
-                    <AvatarFallback>ME</AvatarFallback>
-                  </Avatar>
-                )}
-              </div>
-            </div>
+            <Message
+              id={message.id}
+              content={message.content}
+              isUser={message.isUser}
+              timestamp={message.timestamp}
+            />
           ))}
 
           {/* Typing indicator */}
@@ -434,22 +447,6 @@ export default function ConversationPage() {
           </div>
         )}
         <div className="max-w-4xl mx-auto flex items-end gap-2">
-          {/* Speaker button */}
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={toggleSpeaker}
-            className={`${
-              !isSpeakerOn ? "bg-destructive text-destructive-foreground" : ""
-            }`}
-          >
-            {isSpeakerOn ? (
-              <Volume2 className="h-5 w-5" />
-            ) : (
-              <VolumeX className="h-5 w-5" />
-            )}
-          </Button>
-          {/* Text input with green border */}
           <div className="flex-1 relative">
             <Textarea
               placeholder="Type your message..."
@@ -473,7 +470,7 @@ export default function ConversationPage() {
           <Button
             variant="outline"
             size="icon"
-            onClick={toggleMicrophone}
+            onClick={isRecording ? stopRecording : startRecording}
             style={{
               backgroundColor: isRecording ? "#86BC25" : "",
               color: isRecording ? "black" : "",
@@ -490,6 +487,11 @@ export default function ConversationPage() {
                 : "Start recording"
             }
           >
+             {/* onClick={isRecording ? stopRecording : startRecording}
+            className={`${
+              isRecording ? "bg-destructive text-destructive-foreground" : ""
+            }`}
+            disabled={isLoading} */}
             {/* Different states for microphone button */}
             {micPermission === "pending" ? (
               <div className="animate-pulse">
@@ -535,7 +537,8 @@ export default function ConversationPage() {
           {/* Send button */}
           <Button
             style={{
-              backgroundColor: inputValue.trim() && !isLoading ? "#86BC25" : "gray",
+              backgroundColor:
+                inputValue.trim() && !isLoading ? "#86BC25" : "gray",
               opacity: inputValue.trim() && !isLoading ? 1 : 0.5,
             }}
             className="hover:bg-opacity-90 text-black"

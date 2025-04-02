@@ -35,7 +35,7 @@ const Index: React.FC = () => {
 
   // Show full-screen loader while loading
   if (isLoading) {
-    return <Loader fullScreen size="large" />;
+    return <Loader fullScreen />;
   }
 
   return (
