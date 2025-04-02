@@ -2,7 +2,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useAuth } from "@/context/AuthContext";
 
 import { Employee } from "@/context/AuthContext"; // Adjust import path as needed
 
@@ -57,10 +56,16 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({
   // Close menu when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+      // Check if clicked element is not the menu and not the hamburger button
+      if (
+        menuRef.current &&
+        !menuRef.current.contains(event.target as Node) &&
+        !(event.target as HTMLElement).closest(".hamburger-button")
+      ) {
         onClose();
       }
     }
+
     if (isOpen) {
       document.addEventListener("mousedown", handleClickOutside);
     }
@@ -68,6 +73,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [isOpen, onClose]);
+
   return (
     <div
       ref={menuRef}

@@ -3,14 +3,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Calendar, MessageSquare, Clock } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
@@ -146,7 +138,7 @@ export default function DashboardPage() {
 
       setPastConversations(mockConversations);
     }, 1000);
-  }, [router]);
+  }, [router, employeeData]);
 
   return (
     <div className="min-h-screen bg-background text-foreground p-4 md:p-8">
@@ -238,7 +230,7 @@ export default function DashboardPage() {
                 {pastConversations.map((conversation) => (
                   <div
                     key={conversation.id}
-                    className="p-4 hover:bg-primary/90 rounded-lg transition-colors ease-in-out duration-100 cursor-pointer border border-border/30"
+                    className="p-4 hover:bg-primary-dark/50 rounded-lg transition-colors ease-in-out duration-100 cursor-pointer border border-border/30"
                   >
                     <div className="flex justify-between items-start">
                       <div>
