@@ -14,20 +14,45 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
-
+import { z } from 'zod';
 export default function HRLoginModal() {
   const { signInHR } = useAuth();
   const router = useRouter();
+  //zod validation
+  const loginSchema = z.object({
+    email: z.string().regex(/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/).max(50),
+    password: z.string().regex(
+      /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$/,
+      "Password must contain at least 8 characters, including letters, numbers, and special characters"
+    ).max(20),
+  });
 
+  const [LoginformData, setLoginFormData] = React.useState({
+    email: '',
+    password: ''
+  });
   // Modal state
   const [open, setOpen] = useState(false);
 
   // Login form states
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [Loginerrors, setLoginErrors] = React.useState({
+    email: 0,
+    password: 0
+  });
+  const handleLoginChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    const updatedFormData = { ...LoginformData, [name]: value };
+    setLoginFormData(updatedFormData);
+    const fieldSchema = loginSchema.shape[name as keyof typeof loginSchema.shape];
+    const result = fieldSchema.safeParse(value);
 
+    setLoginErrors(prevErrors => ({
+      ...prevErrors,
+      [name]: result.success ? 0 : 1
+    }));
+  };
   // Handle form submission
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,7 +61,7 @@ export default function HRLoginModal() {
 
     try {
       // Call the HR login function
-      const response = await signInHR(email, password);
+      const response = await signInHR(LoginformData.email, LoginformData.password);
       if (response.token) {
         // Redirect to HR Dashboard on success
         router.push("/hr-dashboard");
@@ -59,7 +84,7 @@ export default function HRLoginModal() {
       </DialogTrigger>
 
       {/* Modal content */}
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[425px] dark bg-[#131313] text-white">
         <DialogHeader>
           <DialogTitle className="text-center">HR Login</DialogTitle>
         </DialogHeader>
@@ -71,31 +96,33 @@ export default function HRLoginModal() {
             <Input
               id="email"
               type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              name="email"
+              onChange={handleLoginChange}
               placeholder="HR@example.com"
-              required
+              required={true}
             />
           </div>
+          {Loginerrors.email ? <p className="text-red-500 text-xs">Enter valid email.</p> : <></>}
 
           <div className="grid gap-2">
             <Label htmlFor="password">Password</Label>
             <Input
               id="password"
               type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              name="password"
+              onChange={handleLoginChange}
               placeholder="••••••••"
-              required
+              required={true}
             />
           </div>
+          {Loginerrors.password ? <p className="text-red-500 text-xs">Password must contain at least 8 characters, including letters, numbers, and special characters</p> : <></>}
 
           {/* Error message */}
-          {error && <p className="text-red-500">{error}</p>}
+          {error && <p className="text-xs text-red-500">{error}</p>}
 
           {/* Submit button */}
           <DialogFooter className="mt-4">
-            <Button type="submit" disabled={loading} className="w-full">
+            <Button type="submit" disabled={loading} className="cursor-pointer font-medium text-base text-black w-full bg-[#26890d]  hover:bg-[#26890d]">
               {loading ? "Logging In..." : "Login"}
             </Button>
           </DialogFooter>

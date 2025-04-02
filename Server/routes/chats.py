@@ -58,8 +58,8 @@ async def start_conversation(request: StartConversationRequest, db: Session = De
         if topic in question_bank:
             selected_questions.extend(question_bank[topic])
 
-    if not selected_questions:
-        raise HTTPException(status_code=400, detail="No valid questions found for the given SHAP topics")
+    # if not selected_questions:
+    #     raise HTTPException(status_code=400, detail="No valid questions found for the given SHAP topics")
     
     now = datetime.now()
     new_conversation = Conversation(
@@ -107,8 +107,8 @@ async def send_message(request: MessageRequest, db: Session = Depends(get_db)):
 
         # Retrieve the pre-selected questions
         questions = request.selected_questions
-        if not questions:
-            raise HTTPException(status_code=404, detail="No pre-selected questions found")
+        # if not questions:
+        #     raise HTTPException(status_code=404, detail="No pre-selected questions found")
         question_text = "\n".join([f"- {q}" for q in questions])
 
 

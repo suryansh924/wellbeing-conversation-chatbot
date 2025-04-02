@@ -18,6 +18,7 @@ import { Separator } from "@/components/ui/separator";
 interface SidebarProps {
   collapsed: boolean;
   onToggle: () => void;
+  className?: string;
 }
 
 export function Sidebar({ collapsed, onToggle }: SidebarProps) {

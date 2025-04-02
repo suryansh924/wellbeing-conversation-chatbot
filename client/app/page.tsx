@@ -5,22 +5,38 @@ import { Button } from "@/components/ui/button";
 import AuthModal from "@/components/AuthModal";
 import { useAuth } from "@/context/AuthContext";
 import HrAuthModal from "@/components/HrAuthModal";
-
+import Loader from "@/components/ui/Loader"; // Update the path to the correct location of the Loader component
+// import ContentLoader from "@/components/ui/ContentLoader";
 const Index: React.FC = () => {
   const [scrollY, setScrollY] = useState(0);
-  const {signInModalVisible, setSignInModalVisible} = useAuth();
+  const { signInModalVisible, setSignInModalVisible } = useAuth();
+  const [isLoading, setIsLoading] = useState(true); // State to control loader visibility
 
   useEffect(() => {
     const handleScroll = () => {
       setScrollY(window.scrollY);
     };
     window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
+    
+    // Simulate loading time and then hide the loader
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 2000);
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      clearTimeout(timer);
+    };
   }, []);
 
   // Calculate opacity and transform values based on scroll position
   const gradientOpacity = Math.max(0, Math.min(1, 1 - scrollY / 600));
   const transformValue = `translateY(${Math.min(scrollY * 0.2, 100)}px)`;
+
+  // Show full-screen loader while loading
+  if (isLoading) {
+    return <Loader fullScreen size="large" />;
+  }
 
   return (
     <div className="w-full min-h-screen bg-black relative overflow-hidden">
@@ -114,7 +130,10 @@ const Index: React.FC = () => {
             {/* dashboard preview */}
             <div className="flex-1 max-w-[650px] relative z-0">
               <div className="flex w-full h-[650px] flex-col justify-between items-center border bg-[rgba(0,0,0,0.8)] p-4 rounded-3xl border-[rgba(255,255,255,0.12)] overflow-hidden shadow-2xl">
-                <div className="flex w-full h-full items-start bg-[rgba(30,30,30,0.9)] rounded-2xl overflow-hidden"></div>
+                <div className="flex w-full h-full items-start bg-[rgba(30,30,30,0.9)] rounded-2xl overflow-hidden">
+                  {/* You can add an inline loader here if content is loading */}
+                  {/* {contentLoading && <div className="p-4"><Loader size="small" /></div>} */}
+                </div>
               </div>
             </div>
           </div>

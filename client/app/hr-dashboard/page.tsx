@@ -20,23 +20,23 @@ const hrDashboard: React.FC = () => {
   const router = useRouter();
   const { isLogged, fetchHRProfile, hrData } = useAuth();
 
-  useEffect(() => {
-    const checkAuth = async () => {
-      if (!isLogged) {
-        // If the user is not logged in, redirect to login page
-        router.push("/"); // Update this path based on your actual login page path
-      } else {
-        // If logged in, attempt to fetch HR profile
-        try {
-          await fetchHRProfile();
-        } catch (error) {
-          console.error("Failed to fetch HR profile:", error);
-        }
-      }
-    };
+  // useEffect(() => {
+  //   const checkAuth = async () => {
+  //     if (!isLogged) {
+  //       // If the user is not logged in, redirect to login page
+  //       router.push("/"); // Update this path based on your actual login page path
+  //     } else {
+  //       // If logged in, attempt to fetch HR profile
+  //       try {
+  //         await fetchHRProfile();
+  //       } catch (error) {
+  //         console.error("Failed to fetch HR profile:", error);
+  //       }
+  //     }
+  //   };
 
-    checkAuth();
-  }, [isLogged, router, fetchHRProfile]);
+  //   checkAuth();
+  // }, [isLogged, router, fetchHRProfile]);
 
   useEffect(() => {
     // Simulate loading delay for animations
