@@ -54,7 +54,7 @@ export default function AuthModal() {
   const router = useRouter();
 
   // Modal open state.
-  const [open, setOpen] = React.useState(false);
+  // const [open, setOpen] = React.useState(false);
   // Mode can be "login" or "register".
   const [mode, setMode] = React.useState<"login" | "register">("login");
   // Registration step: "checkId" or "registerForm"
@@ -69,11 +69,10 @@ export default function AuthModal() {
   const [loading, setLoading] = React.useState(false);
 
   //Zod vaidation
-
   const loginSchema = z.object({
     email: z.string().regex(/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/).max(50),
     password: z.string().regex(
-      /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$/,
+      /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{6,}$/,
       "Password must contain at least 8 characters, including letters, numbers, and special characters"
     ).max(20),
   });
@@ -111,6 +110,7 @@ export default function AuthModal() {
     password: 0,
     confirmPassword: 0,
   });
+
   const handleLoginChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     const updatedFormData = { ...LoginformData, [name]: value };
@@ -144,22 +144,21 @@ export default function AuthModal() {
     }
   };
 
-  // Reset states when modal closes.setRegEmployeeId
+  // Reset states when modal closes.
   const handleOpenChange = (isOpen: boolean) => {
     if (!isOpen) {
-      setLoginEmail("");
-      setLoginPassword("");
-      ("");
-      setRegName("");
-      setRegEmail("");
-      setRegPassword("");
-      setRegConfirmPassword("");
+      // setLoginEmail("");
+      // setLoginPassword("");
+      // setRegName("");
+      // setRegEmail("");
+      // setRegPassword(""); 
+      // setRegConfirmPassword("");
       setError("");
       setMode("login");
       setRegisterStep("checkId");
     }
     setSignInModalVisible(isOpen);
-    setOpen(!open);
+    // setOpen(!open);
   };
 
   // After successful login or registration, fetch the employee profile
@@ -194,7 +193,7 @@ export default function AuthModal() {
         localStorage.setItem("access_token", token)
         setIsLogged(true)
         await handlePostAuth();
-        setOpen(false);
+        // setOpen(false);
         setSignInModalVisible(false);
       } catch (err) {
         console.log(err);
@@ -213,18 +212,19 @@ export default function AuthModal() {
     e.preventDefault();
     setError("");
     setLoading(true);
-    // try {
-    //   const exists = await checkEmployeeId(regEmployeeId);
-    //   if (!exists) {
-    //     setError("Employee ID not found.");
-    //   } else {
-    //   }
-    // } catch {
-    //   setError("Error checking employee ID. Please try again.");
-    // } finally {
-    //   setLoading(false);
-    // }
-    setRegisterStep("registerForm");
+    try {
+      const exists = await checkEmployeeId(regEmployeeId);
+      console.log(exists)
+      if (!exists) {
+        setError("Employee ID not found.");
+      } else {
+        setRegisterStep("registerForm");
+      }
+    } catch {
+      setError("Error checking employee ID. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Handle registration submission using Firebase.
@@ -247,7 +247,7 @@ export default function AuthModal() {
         localStorage.setItem("access_token", token)
         setIsLogged(true)
         await handlePostAuth();
-        setOpen(false);
+        setSignInModalVisible(false);
       } catch (err: unknown) {
         if (err instanceof Error) {
           setError(err.message);
@@ -290,7 +290,7 @@ export default function AuthModal() {
       localStorage.setItem("access_token", token)
       setIsLogged(true)
       await handlePostAuth();
-      setOpen(false);
+      setSignInModalVisible(false);
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message);
@@ -316,7 +316,7 @@ export default function AuthModal() {
       localStorage.setItem("access_token", token)
       setIsLogged(true)
       await handlePostAuth();
-      setOpen(false);
+      setSignInModalVisible(false);
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message);
@@ -327,10 +327,10 @@ export default function AuthModal() {
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
+    <Dialog open={signInModalVisible} onOpenChange={handleOpenChange}>
       {/* Trigger button */}
       <DialogTrigger asChild>
-        <Button>Get Started</Button>
+        <Button className='bg-black text-white cursor-pointer text-lg font-semibold px-10 py-4 h-auto rounded-full'>Get Started</Button>
       </DialogTrigger>
 
       <DialogContent className="sm:max-w-[425px] dark bg-[#131313] text-white">
@@ -574,4 +574,3 @@ export default function AuthModal() {
     </Dialog>
   );
 }
-
