@@ -21,7 +21,7 @@ const hrDashboard: React.FC = () => {
   const { isLogged, fetchHRProfile} = useAuth();
 
   useEffect(() => {
-    };
+    },
 
     checkAuth();
   }, [isLogged, fetchEmployeeProfile, employeeData, router]);

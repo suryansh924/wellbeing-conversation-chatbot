@@ -179,24 +179,28 @@ export default function AuthModal() {
   // Handle login submission using Firebase.
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     const result = loginSchema.safeParse(LoginformData);
-    console.log(result);
     if (result.success) {
+      setLoading(true);
       try {
         await signIn(LoginformData.email, LoginformData.password);
         const res = await axios.post("http://127.0.0.1:8000/api/user/login", {
           email: LoginformData.email,
+          password: LoginformData.password
         }
         )
+        console.log(res)
         const token = res.data.token
         localStorage.setItem("access_token", token)
         setIsLogged(true)
         await handlePostAuth();
         setOpen(false);
         setSignInModalVisible(false);
-      } catch (err) {
-        console.log(err);
+      } catch (err: unknown) {
+        setError("Invalid Credentials")
+      }
+      finally{
+        setLoading(false)
       }
     } else {
       const newError = { email: 0, password: 0 };
@@ -398,7 +402,7 @@ export default function AuthModal() {
             </div>
             {Loginerrors.password ? <p className="text-red-500 text-xs">Password must contain at least 8 characters, including letters, numbers, and special characters</p> : <></>}
 
-            {/* {error && <p className="text-red-500 text-sm">{error}</p>} */}
+            {error && <p className="text-red-500 text-sm">{error}</p>}
 
             <DialogFooter className="mt-4 ">
               <Button variant="default" type="submit" className=" cursor-pointer font-medium text-base text-black w-full bg-[#26890d]  hover:bg-[#26890d]">
@@ -406,6 +410,7 @@ export default function AuthModal() {
               </Button>
             </DialogFooter>
 
+            
             <p className="text-center  text-sm mt-4">
               Don&apos;t have an account?{" "}
               <span

@@ -163,7 +163,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!response.ok) {
         throw new Error("Failed to fetch employee profile");
       }
-
       const data = await response.json();
       setEmployeeData(data);
       return data;
