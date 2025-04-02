@@ -56,7 +56,7 @@ export default function AuthModal() {
   const router = useRouter();
 
   // Modal open state.
-  const [open, setOpen] = React.useState(false);
+  // const [open, setOpen] = React.useState(false);
   // Mode can be "login" or "register".
   const [mode, setMode] = React.useState<"login" | "register">("login");
   // Registration step: "checkId" or "registerForm"
@@ -171,7 +171,7 @@ export default function AuthModal() {
       setRegisterStep("checkId");
     }
     setSignInModalVisible(isOpen);
-    setOpen(!open);
+    // setOpen(!open);
   };
 
   // After successful login or registration, fetch the employee profile
@@ -205,7 +205,7 @@ export default function AuthModal() {
         localStorage.setItem("access_token", token);
         setIsLogged(true);
         await handlePostAuth();
-        setOpen(false);
+        // setOpen(false);
         setSignInModalVisible(false);
       } catch (err) {
         console.log(err);
@@ -265,7 +265,7 @@ export default function AuthModal() {
         localStorage.setItem("access_token", token);
         setIsLogged(true);
         await handlePostAuth();
-        setOpen(false);
+        setSignInModalVisible(false);
       } catch (err: unknown) {
         if (err instanceof Error) {
           setError(err.message);
@@ -307,7 +307,7 @@ export default function AuthModal() {
       localStorage.setItem("access_token", token);
       setIsLogged(true);
       await handlePostAuth();
-      setOpen(false);
+      setSignInModalVisible(false);
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message);
@@ -332,7 +332,7 @@ export default function AuthModal() {
       localStorage.setItem("access_token", token);
       setIsLogged(true);
       await handlePostAuth();
-      setOpen(false);
+      setSignInModalVisible(false);
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message);
@@ -343,7 +343,7 @@ export default function AuthModal() {
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
+    <Dialog open={signInModalVisible} onOpenChange={handleOpenChange}>
       {/* Trigger button */}
       <DialogTrigger asChild>
         <Button className='bg-black text-white cursor-pointer text-lg font-semibold px-10 py-4 h-auto rounded-full'>Get Started</Button>
