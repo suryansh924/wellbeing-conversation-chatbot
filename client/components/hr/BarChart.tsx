@@ -54,13 +54,14 @@ export function HRBarChart() {
         {payload.map((entry: any, index: number) => (
           <div
             key={`item-${index}`}
-            className="flex items-center cursor-pointer transition-opacity"
-            style={{ opacity: getBarOpacity(entry.value) }}
+            className={`flex items-center cursor-pointer transition-opacity ${
+              !hoveredEmotion || entry.value === hoveredEmotion ? "opacity-100" : "opacity-50"
+            }`}
             onMouseEnter={() => handleMouseEnter(entry.value)}
             onMouseLeave={handleMouseLeave}
           >
             <div
-              className="w-3 h-3 mr-1 rounded"
+              className="chart-legend-item"
               style={{
                 backgroundColor: entry.color,
               }}
@@ -73,7 +74,7 @@ export function HRBarChart() {
   };
 
   return (
-    <Card className="shadow-card bg-card border border-hr-green/20">
+    <Card className="shadow-card bg-card border border-[#26890d]/20">
       <CardHeader>
         <CardTitle className="text-xl font-semibold text-white">
           Employee Mood Trends
@@ -109,11 +110,13 @@ export function HRBarChart() {
               interval={0}
               height={50}
               tickMargin={8}
+              className="chart-axis-tick"
             />
             <YAxis
               stroke="rgba(255,255,255,0.5)"
               tick={{ fontSize: "0.8rem" }}
               width={40}
+              className="chart-axis-tick"
             />
             <Tooltip
               contentStyle={{
@@ -143,30 +146,11 @@ export function HRBarChart() {
                   stroke: "transparent",
                   fill: colors[emotion],
                 }}
-                className="custom-bar-no-highlight"
+                className="chart-bar-no-highlight"
               />
             ))}
           </RechartsBC>
         </ResponsiveContainer>
-
-        <style jsx>{`
-          :global(.recharts-cartesian-axis-tick-value) {
-            font-size: 12px;
-          }
-
-          @media (max-width: 640px) {
-            :global(.recharts-cartesian-axis-tick-value) {
-              font-size: 10px;
-            }
-          }
-
-          :global(.custom-bar-no-highlight:hover) {
-            filter: none !important;
-            stroke: none !important;
-            stroke-width: 0 !important;
-            box-shadow: none !important;
-          }
-        `}</style>
       </CardContent>
     </Card>
   );

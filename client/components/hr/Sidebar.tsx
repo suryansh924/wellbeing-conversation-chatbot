@@ -36,29 +36,40 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   return (
     <div
       className={cn(
-        "flex flex-col h-screen bg-hr-black border-r border-hr-green/30 shadow-sidebar transition-all duration-300 ease-in-out",
+        "flex flex-col h-screen bg-hr-black border-r border-[#26890d]/30 shadow-sidebar transition-all duration-300 ease-in-out",
         collapsed ? "w-[70px]" : "w-[240px]"
       )}
     >
       <div className="flex items-center justify-between p-4">
         {!collapsed && (
-          <div className="font-semibold text-lg text-hr-green animate-fade-in">
-            Vibemeter HR
+          <div className="font-semibold text-lg text-[#26890d] animate-fade-in">
+            <span className="text-[#26890d]">Vibemeter HR</span>
           </div>
         )}
         <Button
           variant="ghost"
           size="icon"
           onClick={onToggle}
-          className="text-hr-green hover:text-white hover:bg-hr-green/20 transition-colors duration-200"
+          className="text-[#26890d] transition-colors duration-200"
+          style={{
+            ['--hover-bg-color' as string]: "rgba(38, 137, 13, 0.2)",
+          }}
+          onMouseOver={(e) => {
+            e.currentTarget.style.backgroundColor = "rgba(38, 137, 13, 0.2)";
+            e.currentTarget.style.color = "white";
+          }}
+          onMouseOut={(e) => {
+            e.currentTarget.style.backgroundColor = "";
+            e.currentTarget.style.color = "#26890d";
+          }}
         >
           <Menu size={20} />
         </Button>
       </div>
 
-      <Separator className="my-2 bg-hr-green/20" />
+      <Separator className="my-2 bg-[#26890d]/20" />
 
-      <div className="flex-1 overflow-y-auto hr-custom-scrollbar px-2 py-4 stagger-fade-in">
+      <div className="flex-1 overflow-y-auto hr-scrollbar px-2 py-4 stagger-fade-in">
         <NavItem
           icon={BarChart}
           label="Analytics"
@@ -75,56 +86,56 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
         />
       </div>
 
-      <Separator className="my-2 bg-hr-green/20" />
+      <Separator className="my-2 bg-[#26890d]/20" />
 
       <div className="p-4">
         <div
           className={cn(
-            "flex flex-col items-center rounded-lg bg-hr-green/10 p-4 transition-all duration-300 hover:bg-hr-green/20",
+            "flex flex-col items-center rounded-lg bg-[#26890d]/10 p-4 transition-all duration-300 hover:bg-[#26890d]/20",
             collapsed
               ? "py-2 bg-transparent hover:bg-transparent"
-              : "py-4 bg-hr-green/10 hover:bg-hr-green/20"
+              : "py-4 bg-[#26890d]/10 hover:bg-[#26890d]/20"
           )}
         >
           <Avatar
             className={cn(
-              "h-20 w-20 border-2 border-hr-green shadow-lg mb-4",
+              "h-20 w-20 border-2 border-[#26890d] shadow-lg mb-4",
               collapsed && "h-10 w-10 mb-2"
             )}
           >
             <AvatarImage src="https://github.com/shadcn.png" />
-            <AvatarFallback className="bg-hr-green text-black font-semibold">
+            <AvatarFallback className="bg-[#26890d] text-black font-semibold">
               JD
             </AvatarFallback>
           </Avatar>
 
           {!collapsed && (
             <div className="text-center space-y-3 animate-fade-in w-full">
-              <div className="font-semibold text-hr-green text-lg">
+              <div className="font-semibold text-[#26890d] text-lg">
                 John Doe
               </div>
-              <div className="text-sm text-gray-200 font-medium bg-hr-green/20 py-1 px-2 rounded-md">
+              <div className="text-sm text-gray-200 font-medium bg-[#26890d]/20 py-1 px-2 rounded-md">
                 HR Manager
               </div>
 
               <div className="space-y-2 pt-2 text-left">
                 <div className="flex items-center gap-2 text-xs text-gray-300">
-                  <Briefcase size={14} className="text-hr-green" />
+                  <Briefcase size={14} className="text-[#26890d]" />
                   <span>ID: HR-2024-001</span>
                 </div>
                 <div className="flex items-center gap-2 text-xs text-gray-300">
-                  <Mail size={14} className="text-hr-green" />
+                  <Mail size={14} className="text-[#26890d]" />
                   <span>john.doe@company.com</span>
                 </div>
                 <div className="flex items-center gap-2 text-xs text-gray-300">
-                  <Phone size={14} className="text-hr-green" />
+                  <Phone size={14} className="text-[#26890d]" />
                   <span>+1 (555) 123-4567</span>
                 </div>
               </div>
 
               <Button
                 variant="default"
-                className="w-full mt-2 justify-center gap-2 bg-[#252525] text-hr-green border-hr-green hover:bg-hr-green hover:text-black transition-colors duration-200"
+                className="w-full mt-2 justify-center gap-2 bg-[#252525] text-[#26890d] border-[#26890d] hover:bg-[#26890d] hover:text-black transition-colors duration-200"
               >
                 <LogOut size={16} />
                 <span>Log Out</span>
@@ -135,7 +146,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
           {collapsed && (
             <Button
               variant="default"
-              className="p-2 mt-2 justify-center bg-[#252525] text-hr-green hover:bg-hr-green hover:text-black transition-colors duration-200"
+              className="p-2 mt-2 justify-center bg-[#252525] text-[#26890d] hover:bg-[#26890d] hover:text-black transition-colors duration-200"
             >
               <LogOut size={16} />
             </Button>
@@ -165,11 +176,11 @@ function NavItem({
     <Button
       variant="ghost"
       className={cn(
-        "w-full justify-start gap-2 my-1 transition-all duration-200", // Changed from my-3 to my-1
+        "w-full justify-start gap-2 my-1 transition-all duration-200",
         collapsed ? "justify-center p-2" : "px-3 py-2",
         active
-          ? "bg-[#26890d] text-black"
-          : "text-white hover:bg-[#86BC25] hover:text-black"
+          ? "bg-[#26890d] text-black font-semibold pointer-events-none" // Active state: no hover effect
+          : "text-white hover:!bg-[#26890d]/20 hover:!text-white"
       )}
       onClick={onClick}
     >

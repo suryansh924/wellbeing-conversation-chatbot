@@ -65,7 +65,7 @@ export function HRPieChart() {
 
   const renderColorfulLegendText = (value: string, entry: any) => {
     const color = entry.color;
-    return <span style={{ color: color, fontWeight: 'bold' }}>{value}</span>;
+    return <span className="hr-chart-legend-text" style={{ color }}>{value}</span>;
   };
 
   const handleClick = (data, index) => {
@@ -101,7 +101,7 @@ export function HRPieChart() {
             x2={lineX2} 
             y2={lineY2} 
             stroke={COLORS[index]} 
-            strokeWidth={2} 
+            className="hr-chart-line"
           />
           <text 
             x={x} 
@@ -133,13 +133,10 @@ export function HRPieChart() {
       return (
         <text 
           x={x} 
-          y={y} 
-          fill="#ffffff"
+          y={y}
           textAnchor={x > cx ? 'start' : 'end'} 
           dominantBaseline="central"
-          fontSize={simpleLabel ? "10px" : "12px"}
-          fontWeight="500"
-          style={{ pointerEvents: 'none' }} // Prevent labels from capturing mouse events
+          className={`hr-chart-label ${simpleLabel ? 'hr-chart-label-sm' : 'hr-chart-label-md'}`}
         >
           {simpleLabel ? `${(percent * 100).toFixed(0)}%` : `${name} ${(percent * 100).toFixed(0)}%`}
         </text>
@@ -148,19 +145,19 @@ export function HRPieChart() {
   }, [width, COLORS]);
 
   return (
-    <Card className={`shadow-card overflow-hidden ${isAnimating ? 'chart-appear' : ''}`}>
+    <Card className={`hr-chart-card ${isAnimating ? 'hr-chart-appear' : ''}`}>
       <CardHeader className="pb-2">
-        <CardTitle className="text-xl font-medium text-gray-200">Employee Flag Status</CardTitle>
+        <CardTitle className="hr-chart-title">Employee Flag Status</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="h-[300px] w-full">
+        <div className="hr-chart-container">
           <ResponsiveContainer width="100%" height="100%">
             <RechartsPC>
               <Pie
                 data={data}
                 cx="50%"
                 cy="50%"
-                labelLine={false} // Disable default label lines as we're handling them manually
+                labelLine={false}
                 outerRadius={width < 576 ? 80 : width >= 768 ? 90 : 100}
                 fill="#8884d8"
                 dataKey="value"
@@ -175,7 +172,7 @@ export function HRPieChart() {
                 onMouseLeave={() => {
                   setHoverSlice(null);
                 }}
-                isAnimationActive={false} // Disable animation on updates to prevent flickering
+                isAnimationActive={false}
                 strokeWidth={1}
                 stroke="#131313"
               >
