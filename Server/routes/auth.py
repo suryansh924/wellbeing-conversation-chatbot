@@ -246,7 +246,7 @@ def hr_login(request: HRLoginRequest, db: Session = Depends(get_db)):
 def get_hr(authorization: str = Header(...), db: Session = Depends(get_db)):
     token = authorization.split(" ")[1]
     
-    hr_id = verify_user(token)
+    hr_id = verify_user(token)["user_id"]
     
     # Fetch user from the database
     hr = db.query(HRUser).filter(HRUser.email == hr_id).first()

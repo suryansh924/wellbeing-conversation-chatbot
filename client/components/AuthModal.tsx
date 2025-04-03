@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
-import { z } from 'zod';
+import { z } from "zod";
 import * as React from "react";
 import axios from "axios";
 import { SafeParseReturnType } from "zod";
@@ -49,7 +49,9 @@ export default function AuthModal() {
     signInWithGoogle,
     signInWithTwitter,
     fetchEmployeeProfile,
-    setIsLogged, setSignInModalVisible, signInModalVisible,
+    setIsLogged,
+    setSignInModalVisible,
+    signInModalVisible,
   } = useAuth();
   const router = useRouter();
 
@@ -76,33 +78,40 @@ export default function AuthModal() {
       "Password must contain at least 8 characters, including letters, numbers, and special characters"
     ).max(20),
   });
-  const registerSchema = z.object({
-    name: z.string().max(50).min(1),
-    email: z.string().regex(/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/).max(50),
-    password: z.string().regex(
-      /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$/,
-      "Password must contain at least 8 characters, including letters, numbers, and special characters"
-    ).max(20),
-    confirmPassword: z.string().max(20),
-  }).refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords do not match",
-    path: ["confirmPassword"],
-  });
-
+  const registerSchema = z
+    .object({
+      name: z.string().max(50).min(1),
+      email: z
+        .string()
+        .regex(/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/)
+        .max(50),
+      password: z
+        .string()
+        .regex(
+          /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$/,
+          "Password must contain at least 8 characters, including letters, numbers, and special characters"
+        )
+        .max(20),
+      confirmPassword: z.string().max(20),
+    })
+    .refine((data) => data.password === data.confirmPassword, {
+      message: "Passwords do not match",
+      path: ["confirmPassword"],
+    });
 
   const [RegisterformData, setRegisterFormData] = React.useState({
-    name: '',
-    email: '',
-    password: '',
-    confirmPassword: ''
+    name: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
   });
   const [LoginformData, setLoginFormData] = React.useState({
-    email: '',
-    password: ''
+    email: "",
+    password: "",
   });
   const [Loginerrors, setLoginErrors] = React.useState({
     email: 0,
-    password: 0
+    password: 0,
   });
   const [Registererrors, setRegisterErrors] = React.useState({
     name: 0,
@@ -115,12 +124,13 @@ export default function AuthModal() {
     const { name, value } = e.target;
     const updatedFormData = { ...LoginformData, [name]: value };
     setLoginFormData(updatedFormData);
-    const fieldSchema = loginSchema.shape[name as keyof typeof loginSchema.shape];
+    const fieldSchema =
+      loginSchema.shape[name as keyof typeof loginSchema.shape];
     const result = fieldSchema.safeParse(value);
 
-    setLoginErrors(prevErrors => ({
+    setLoginErrors((prevErrors) => ({
       ...prevErrors,
-      [name]: result.success ? 0 : 1
+      [name]: result.success ? 0 : 1,
     }));
   };
   const handleRegisterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -129,17 +139,20 @@ export default function AuthModal() {
     setRegisterFormData(updatedFormData);
     if (name === "confirmPassword") {
       const result = registerSchema.safeParse(updatedFormData);
-      setRegisterErrors(prevErrors => ({
+      setRegisterErrors((prevErrors) => ({
         ...prevErrors,
-        confirmPassword: result.success ? 0 : 1
+        confirmPassword: result.success ? 0 : 1,
       }));
     } else {
       // Validate only the specific field
-      const fieldSchema = registerSchema._def.schema.shape[name as keyof typeof registerSchema._def.schema.shape];
+      const fieldSchema =
+        registerSchema._def.schema.shape[
+          name as keyof typeof registerSchema._def.schema.shape
+        ];
       const result = fieldSchema.safeParse(value);
-      setRegisterErrors(prevErrors => ({
+      setRegisterErrors((prevErrors) => ({
         ...prevErrors,
-        [name]: result.success ? 0 : 1
+        [name]: result.success ? 0 : 1,
       }));
     }
   };
@@ -166,7 +179,7 @@ export default function AuthModal() {
   const handlePostAuth = async () => {
     try {
       const profile = await fetchEmployeeProfile();
-      if (profile.is_selected) {
+      if (profile.is_selected && !profile.is_resolved) {
         router.push("/conversation/");
       } else {
         router.push("/dashboard");
@@ -179,28 +192,32 @@ export default function AuthModal() {
   // Handle login submission using Firebase.
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     const result = loginSchema.safeParse(LoginformData);
-    console.log(result);
     if (result.success) {
+      setLoading(true);
       try {
         await signIn(LoginformData.email, LoginformData.password);
         const res = await axios.post("http://127.0.0.1:8000/api/user/login", {
           email: LoginformData.email,
+          password: LoginformData.password
         }
         )
+        console.log(res)
         const token = res.data.token
         localStorage.setItem("access_token", token)
         setIsLogged(true)
         await handlePostAuth();
         // setOpen(false);
         setSignInModalVisible(false);
-      } catch (err) {
-        console.log(err);
+      } catch (err: unknown) {
+        setError("Invalid Credentials")
+      }
+      finally{
+        setLoading(false)
       }
     } else {
       const newError = { email: 0, password: 0 };
-      result.error.errors.forEach(err => {
+      result.error.errors.forEach((err) => {
         if (err.path.includes("email")) newError.email = 1;
         if (err.path.includes("password")) newError.password = 1;
       });
@@ -236,16 +253,22 @@ export default function AuthModal() {
     if (result.success) {
       console.log("form submitted");
       try {
-        await signUp(RegisterformData.email, RegisterformData.password, RegisterformData.name);
-        const res = await axios.post("http://127.0.0.1:8000/api/user/register", {
-          email: RegisterformData.email,
-          emp_id: regEmployeeId,
-          name: RegisterformData.name
-        }
-        )
-        const token = res.data.token
-        localStorage.setItem("access_token", token)
-        setIsLogged(true)
+        await signUp(
+          RegisterformData.email,
+          RegisterformData.password,
+          RegisterformData.name
+        );
+        const res = await axios.post(
+          "http://127.0.0.1:8000/api/user/register",
+          {
+            email: RegisterformData.email,
+            emp_id: regEmployeeId,
+            name: RegisterformData.name,
+          }
+        );
+        const token = res.data.token;
+        localStorage.setItem("access_token", token);
+        setIsLogged(true);
         await handlePostAuth();
         setSignInModalVisible(false);
       } catch (err: unknown) {
@@ -264,7 +287,7 @@ export default function AuthModal() {
         password: 0,
         confirmPassword: 0,
       };
-      result.error.errors.forEach(err => {
+      result.error.errors.forEach((err) => {
         if (err.path.includes("name")) newError.name = 1;
         if (err.path.includes("email")) newError.email = 1;
         if (err.path.includes("password")) newError.password = 1;
@@ -283,12 +306,11 @@ export default function AuthModal() {
         email: email,
         emp_id: regEmployeeId,
         name: name,
-        isRegistration: isRegistration
-      }
-      )
-      const token = res.data.token
-      localStorage.setItem("access_token", token)
-      setIsLogged(true)
+        isRegistration: isRegistration,
+      });
+      const token = res.data.token;
+      localStorage.setItem("access_token", token);
+      setIsLogged(true);
       await handlePostAuth();
       setSignInModalVisible(false);
     } catch (err: unknown) {
@@ -309,12 +331,11 @@ export default function AuthModal() {
         email: email,
         emp_id: regEmployeeId,
         name: name,
-        isRegistration: isRegistration
-      }
-      )
-      const token = res.data.token
-      localStorage.setItem("access_token", token)
-      setIsLogged(true)
+        isRegistration: isRegistration,
+      });
+      const token = res.data.token;
+      localStorage.setItem("access_token", token);
+      setIsLogged(true);
       await handlePostAuth();
       setSignInModalVisible(false);
     } catch (err: unknown) {
@@ -363,11 +384,11 @@ export default function AuthModal() {
               </Button>
               <div className="relative my-2 ">
                 <div className="relative flex justify-center items-center text-xs uppercase">
-                  <div className='w-full h-0.5 bg-white'></div>
+                  <div className="w-full h-0.5 bg-white"></div>
                   <span className="px-2 text-white w-full">
                     Or continue with
                   </span>
-                  <div className='w-full h-0.5 bg-white'></div>
+                  <div className="w-full h-0.5 bg-white"></div>
                 </div>
               </div>
 
@@ -382,7 +403,11 @@ export default function AuthModal() {
                   required={true}
                 />
               </div>
-              {Loginerrors.email ? <p className="text-red-500 text-xs">Enter valid email.</p> : <></>}
+              {Loginerrors.email ? (
+                <p className="text-red-500 text-xs">Enter valid email.</p>
+              ) : (
+                <></>
+              )}
 
               <div className="grid gap-2">
                 <Label htmlFor="loginPassword">Password</Label>
@@ -396,16 +421,28 @@ export default function AuthModal() {
                 />
               </div>
             </div>
-            {Loginerrors.password ? <p className="text-red-500 text-xs">Password must contain at least 8 characters, including letters, numbers, and special characters</p> : <></>}
+            {Loginerrors.password ? (
+              <p className="text-red-500 text-xs">
+                Password must contain at least 8 characters, including letters,
+                numbers, and special characters
+              </p>
+            ) : (
+              <></>
+            )}
 
-            {/* {error && <p className="text-red-500 text-sm">{error}</p>} */}
+            {error && <p className="text-red-500 text-sm">{error}</p>}
 
             <DialogFooter className="mt-4 ">
-              <Button variant="default" type="submit" className=" cursor-pointer font-medium text-base text-black w-full bg-[#26890d]  hover:bg-[#26890d]">
+              <Button
+                variant="default"
+                type="submit"
+                className=" cursor-pointer font-medium text-base text-black w-full bg-[#26890d]  hover:bg-[#26890d]"
+              >
                 Login
               </Button>
             </DialogFooter>
 
+            
             <p className="text-center  text-sm mt-4">
               Don&apos;t have an account?{" "}
               <span
@@ -441,7 +478,11 @@ export default function AuthModal() {
             {error && <p className="text-red-500 text-sm">{error}</p>}
 
             <DialogFooter className="mt-4">
-              <Button type="submit" disabled={loading} className="cursor-pointer font-medium text-base text-black w-full bg-[#26890d]  hover:bg-[#26890d]">
+              <Button
+                type="submit"
+                disabled={loading}
+                className="cursor-pointer font-medium text-base text-black w-full bg-[#26890d]  hover:bg-[#26890d]"
+              >
                 {loading ? "Verifying..." : "Verify Employee ID"}
               </Button>
             </DialogFooter>
@@ -487,11 +528,11 @@ export default function AuthModal() {
 
               <div className="relative my-2">
                 <div className="relative flex justify-center items-center text-xs uppercase">
-                  <div className='w-full h-0.5 bg-white'></div>
+                  <div className="w-full h-0.5 bg-white"></div>
                   <span className="px-2 text-white w-full">
                     Or continue with
                   </span>
-                  <div className='w-full h-0.5 bg-white'></div>
+                  <div className="w-full h-0.5 bg-white"></div>
                 </div>
               </div>
             </div>
@@ -508,7 +549,11 @@ export default function AuthModal() {
                   required={true}
                 />
               </div>
-              {Registererrors.name ? <p className="text-red-500 text-xs">Enter valid Name.</p> : <></>}
+              {Registererrors.name ? (
+                <p className="text-red-500 text-xs">Enter valid Name.</p>
+              ) : (
+                <></>
+              )}
 
               <div className="grid gap-2">
                 <Label htmlFor="regEmail">Email</Label>
@@ -521,7 +566,11 @@ export default function AuthModal() {
                   required={true}
                 />
               </div>
-              {Registererrors.email ? <p className="text-red-500 text-xs">Enter valid email.</p> : <></>}
+              {Registererrors.email ? (
+                <p className="text-red-500 text-xs">Enter valid email.</p>
+              ) : (
+                <></>
+              )}
 
               <div className="grid gap-2">
                 <Label htmlFor="regPassword">Password</Label>
@@ -534,7 +583,14 @@ export default function AuthModal() {
                   required={true}
                 />
               </div>
-              {Registererrors.password ? <p className="text-red-500 text-xs">Password must contain at least 8 characters, including letters, numbers, and special characters</p> : <></>}
+              {Registererrors.password ? (
+                <p className="text-red-500 text-xs">
+                  Password must contain at least 8 characters, including
+                  letters, numbers, and special characters
+                </p>
+              ) : (
+                <></>
+              )}
 
               <div className="grid gap-2">
                 <Label htmlFor="regConfirmPassword">Confirm Password</Label>
@@ -547,10 +603,20 @@ export default function AuthModal() {
                   required={true}
                 />
               </div>
-              {Registererrors.confirmPassword ? <p className="text-red-500 text-xs">Passwords Don&apos;t match </p> : <></>}
+              {Registererrors.confirmPassword ? (
+                <p className="text-red-500 text-xs">
+                  Passwords Don&apos;t match{" "}
+                </p>
+              ) : (
+                <></>
+              )}
 
               <DialogFooter className="mt-4">
-                <Button type="submit" disabled={loading} className="cursor-pointer font-medium text-base text-black w-full bg-[#26890d]  hover:bg-[#26890d]">
+                <Button
+                  type="submit"
+                  disabled={loading}
+                  className="cursor-pointer font-medium text-base text-black w-full bg-[#26890d]  hover:bg-[#26890d]"
+                >
                   {loading ? "Registering..." : "Complete Registration"}
                 </Button>
               </DialogFooter>

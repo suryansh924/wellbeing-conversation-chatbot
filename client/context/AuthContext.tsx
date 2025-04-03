@@ -29,6 +29,7 @@ export interface Employee {
   is_selected: boolean;
   sentimental_score: number;
   shap_values: string[];
+  is_resolved:boolean
 }
 
 export interface HRUser {
@@ -40,10 +41,12 @@ export interface HRUser {
 interface AuthContextType {
   user: any;
   employeeData: Employee | null;
+  hrData: HRUser | null;
   isLogged: boolean;
   signInModalVisible: boolean;
   setIsLogged: (isLogged: boolean) => void;
   setEmployeeData: (employee: Employee) => void;
+  setHRData: (hrData: HRUser) => void;
   signIn: (email: string, password: string) => Promise<any>;
   signUp: (email: string, password: string, name: string) => Promise<any>;
   signInWithGoogle: () => Promise<any>;
@@ -52,6 +55,7 @@ interface AuthContextType {
   signInWithTwitter: () => Promise<any>;
   setSignInModalVisible: (visible: boolean) => void;
   fetchEmployeeProfile: () => Promise<Employee>;
+  fetchHRProfile: () => Promise<HRUser>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -72,9 +76,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (token) {
           setIsLogged(true);
           const userRole = localStorage.getItem("user_role");
-          if (userRole === "HR") {
+          if (userRole === "admin") {
             await fetchHRProfile();
-          } else {
+          } else if (userRole === "employee") {
             await fetchEmployeeProfile();
           }
         }
@@ -137,9 +141,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const data = await response.json();
       localStorage.setItem("access_token", data.token);
-      localStorage.setItem("role", data.role);
+      localStorage.setItem("user_role", data.role);
       setIsLogged(true);
-      await fetchHRProfile();
+      // await fetchHRProfile();
       return data;
     } catch (error) {
       console.error("HR login failed:", error);
@@ -163,7 +167,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!response.ok) {
         throw new Error("Failed to fetch employee profile");
       }
-
       const data = await response.json();
       setEmployeeData(data);
       return data;
@@ -189,6 +192,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       const data = await response.json();
+      console.log(data);
       setHRData(data);
       return data;
     } catch (error) {
@@ -201,6 +205,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await signOut(auth);
     setUser(null);
     setIsLogged(false);
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("user_role");
   };
 
   return (
@@ -208,6 +214,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       value={{
         user,
         employeeData,
+        hrData,
         isLogged,
         signInModalVisible,
         setIsLogged,
@@ -220,6 +227,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSignInModalVisible,
         signInHR,
         fetchEmployeeProfile,
+        fetchHRProfile,
+        setHRData,
       }}
     >
       {!loading ? children : <p>Loading...</p>}

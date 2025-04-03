@@ -18,14 +18,23 @@ const hrDashboard: React.FC = () => {
   const reportsRef = useRef<HTMLDivElement | null>(null);
 
   const router = useRouter();
-  const { isLogged, fetchHRProfile} = useAuth();
-
+  const { fetchHRProfile, hrData } = useAuth();
+/*
   useEffect(() => {
-    };
-
+    async function checkAuth() {
+      try {
+        const profile = await fetchHRProfile();
+        if (!profile) {
+          router.push("/");
+        }
+      } catch (error) {
+        console.error("Error fetching profile", error);
+        router.push("/");
+      }
+    }
     checkAuth();
-  }, [isLogged, fetchEmployeeProfile, employeeData, router]);
-
+  }, [router, hrData]);
+*/
   useEffect(() => {
     // Simulate loading delay for animations
     const timer = setTimeout(() => {
@@ -48,8 +57,8 @@ const hrDashboard: React.FC = () => {
         <div className="p-6 space-y-8">
           {/* Analytics Section */}
           <div id="analytics-section" ref={analyticsRef} className="space-y-6">
-            <h2 className="text-2xl font-bold text-hr-green mb-4 flex items-center gap-2">
-              <BarChartIcon size={24} className="text-hr-green" />
+            <h2 className="text-2xl font-bold text-[#26890d] mb-4 flex items-center gap-2">
+              <BarChartIcon size={24} className="text-[#26890d]" />
               ANALYTICS DASHBOARD
             </h2>
 
@@ -65,20 +74,19 @@ const hrDashboard: React.FC = () => {
 
           {/* Reports Section */}
           <div id="reports-section" ref={reportsRef} className="space-y-6 pt-8">
-            <h2 className="text-2xl font-bold text-hr-green mb-4 flex items-center gap-2">
-              <FileText size={24} className="text-hr-green" />
+            <h2 className="text-2xl font-bold text-[#26890d] mb-4 flex items-center gap-2">
+              <FileText size={24} className="text-[#26890d]" />
               Employee Reports
             </h2>
 
             <div
-              className={`${isLoaded ? "scale-in" : "opacity-0"}`}
-              style={{ animationDelay: "0.7s" }}
+              className={`${isLoaded ? "scale-in" : "opacity-0"} animation-delay-700`}
             >
               <div className="mb-4 flex items-center">
                 <div className="relative w-full max-w-md">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 pointer-events-none" />
                   <Input
-                    className="pl-10 bg-hr-black border border-hr-green/30 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-hr-green/70 text-gray-200 placeholder:text-gray-500 outline-none"
+                    className="pl-10 bg-hr-black border border-[#26890d]/30 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-[#26890d]/100 focus-visible:border text-gray-200 placeholder:text-gray-500 outline-none transition-all duration-200"
                     placeholder="Search by employee ID or name..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
