@@ -83,6 +83,7 @@ export default function ConversationPage() {
           console.log(data);
 
           setConversationId(data.conversation_id);
+          
           setSelectedQuestions(data.selected_questions);
 
           setMessages([

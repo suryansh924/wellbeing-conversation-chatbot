@@ -16,7 +16,7 @@ class Master(Base):
     shap_values = Column(MutableList.as_mutable(JSON), default=[])      # Default: empty list.
     report = Column(Text, default="")                                   # Default: empty string.
     sentimental_score = Column(Integer, default=0)                      # Default: 0.
-    is_resolved = Column(Boolean, default=False)                        # Default: not resolved.
+    is_Flagged = Column(Boolean, default=False)                        # Default: not resolved.
     role = Column(String, default="employee")                           # Default: "employee".
 
     # work_hours = Column(Float, default=0.0)
@@ -38,6 +38,7 @@ class HRUser(Base):
     email = Column(String, unique=True, index=True, nullable=False)
     password = Column(String, nullable=False)                           # Hashed password.
     role = Column(String, default="admin")                              # Default: "admin".  
+    daily_report= Column(String, default="")                  # Default: empty string.
 
 
 class Conversation(Base):
