@@ -179,7 +179,7 @@ export default function AuthModal() {
   const handlePostAuth = async () => {
     try {
       const profile = await fetchEmployeeProfile();
-      if (profile.is_selected && !profile.is_resolved) {
+      if (profile.is_selected && !profile.is_Flagged) {
         router.push("/conversation/");
       } else {
         router.push("/dashboard");
@@ -200,7 +200,13 @@ export default function AuthModal() {
         const res = await axios.post("http://127.0.0.1:8000/api/user/login", {
           email: LoginformData.email,
           password: LoginformData.password
+        },
+        {
+          headers: {
+            "Content-Type": "application/json"
+          }
         }
+      
         )
         console.log(res)
         const token = res.data.token
