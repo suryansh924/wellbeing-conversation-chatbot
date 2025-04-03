@@ -97,10 +97,10 @@ export function EmployeeReports({ searchQuery = "" }: EmployeeReportsProps) {
         );
 
   return (
-    <Card className="shadow-card bg-card border border-hr-green/20">
+    <Card className="shadow-card bg-card border border-[#26890d]/30">
       <CardHeader className="pb-2">
-        <CardTitle className="text-xl font-medium text-hr-green flex items-center gap-2">
-          <FileText size={20} className="text-hr-green" />
+        <CardTitle className="text-xl font-medium text-[#26890d] flex items-center gap-2">
+          <FileText size={20} className="text-[#26890d]" />
           Employee Reports
         </CardTitle>
       </CardHeader>
@@ -113,21 +113,24 @@ export function EmployeeReports({ searchQuery = "" }: EmployeeReportsProps) {
           <TabsList className="w-full mb-4 grid grid-cols-3 gap-1 sm:gap-2 md:gap-3 bg-transparent border-0 shadow-none p-0">
             <TabsTrigger
               value="all"
-              className="data-[state=active]:bg-hr-green data-[state=active]:text-black hover:bg-hr-green/20 transition-colors duration-200 border border-hr-green/60 px-1 sm:px-2 md:px-4 py-1 text-xs sm:text-sm md:text-base"
+              className="data-[state=active]:bg-[#26890d] data-[state=active]:!text-black text-white hover:bg-[#0f3d17] transition-colors duration-200 border border-[#26890d]/60 rounded-md px-2 sm:px-3 md:px-4 py-1 md:py-2 text-xs sm:text-sm md:text-base flex justify-center items-center whitespace-nowrap"
             >
-              All<span className="hidden sm:inline">&nbsp;Reports</span>
+              <span className="sm:hidden data-[state=active]:!text-black">All</span>
+              <span className="hidden sm:block data-[state=active]:!text-black">All Reports</span>
             </TabsTrigger>
             <TabsTrigger
               value="unflagged"
-              className="data-[state=active]:bg-hr-green data-[state=active]:text-black hover:bg-hr-green/20 transition-colors duration-200 border border-hr-green/60 px-1 sm:px-2 md:px-4 py-1 text-xs sm:text-sm md:text-base"
+              className="data-[state=active]:bg-[#26890d] data-[state=active]:!text-black text-white hover:bg-[#0f3d17] transition-colors duration-200 border border-[#26890d]/60 rounded-md px-2 sm:px-3 md:px-4 py-1 md:py-2 text-xs sm:text-sm md:text-base flex justify-center items-center whitespace-nowrap"
             >
-              Unflagged<span className="hidden sm:inline">&nbsp;Reports</span>
+              <span className="sm:hidden data-[state=active]:!text-black">Unflagged</span>
+              <span className="hidden sm:block data-[state=active]:!text-black">Unflagged Reports</span>
             </TabsTrigger>
             <TabsTrigger
               value="flagged"
-              className="data-[state=active]:bg-hr-green data-[state=active]:text-black hover:bg-hr-green/20 transition-colors duration-200 border border-hr-green/60 px-1 sm:px-2 md:px-4 py-1 text-xs sm:text-sm md:text-base"
+              className="data-[state=active]:bg-[#26890d] data-[state=active]:!text-black text-white hover:bg-[#0f3d17] transition-colors duration-200 border border-[#26890d]/60 rounded-md px-2 sm:px-3 md:px-4 py-1 md:py-2 text-xs sm:text-sm md:text-base flex justify-center items-center whitespace-nowrap"
             >
-              Flagged<span className="hidden sm:inline">&nbsp;Reports</span>
+              <span className="sm:hidden data-[state=active]:!text-black">Flagged</span>
+              <span className="hidden sm:block data-[state=active]:!text-black">Flagged Reports</span>
             </TabsTrigger>
           </TabsList>
 
@@ -136,20 +139,20 @@ export function EmployeeReports({ searchQuery = "" }: EmployeeReportsProps) {
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow className="border-hr-green/20">
-                    <TableHead className="text-hr-green w-[130px]">
+                  <TableRow className="border-[#26890d]/30 hover:bg-[#2a2f1e]">
+                    <TableHead className="text-[#26890d] font-semibold w-[130px]">
                       Employee ID
                     </TableHead>
-                    <TableHead className="text-hr-green w-[150px] md:w-[170px]">
+                    <TableHead className="text-[#26890d] font-semibold w-[150px] md:w-[170px]">
                       Name
                     </TableHead>
-                    <TableHead className="text-hr-green w-[150px] md:w-[180px]">
+                    <TableHead className="text-[#26890d] font-semibold w-[150px] md:w-[180px]">
                       Position
                     </TableHead>
-                    <TableHead className="text-hr-green w-[100px]">
+                    <TableHead className="text-[#26890d] font-semibold w-[100px]">
                       Status
                     </TableHead>
-                    <TableHead className="text-center text-hr-green w-[100px]">
+                    <TableHead className="text-center text-[#26890d] font-semibold w-[100px]">
                       Actions
                     </TableHead>
                   </TableRow>
@@ -159,23 +162,15 @@ export function EmployeeReports({ searchQuery = "" }: EmployeeReportsProps) {
                     filteredReports.map((report) => (
                       <TableRow
                         key={report.id}
-                        className="transition-colors duration-200 border-hr-green/10"
-                        onMouseEnter={() => setHoveredRow(report.id)}
-                        onMouseLeave={() => setHoveredRow(null)}
-                        style={{
-                          backgroundColor:
-                            hoveredRow === report.id
-                              ? "rgba(134, 188, 37, 0.1)"
-                              : "transparent",
-                        }}
+                        className="transition-colors duration-200 border-[#26890d]/30 hover:bg-[#2a2f1e]"
                       >
-                        <TableCell className="font-medium text-muted-foreground">
+                        <TableCell className="font-medium text-gray-400">
                           {report.id}
                         </TableCell>
                         <TableCell className="text-white">
                           {report.name}
                         </TableCell>
-                        <TableCell className="text-muted-foreground">
+                        <TableCell className="text-gray-400">
                           {report.position}
                         </TableCell>
                         <TableCell>
@@ -183,8 +178,8 @@ export function EmployeeReports({ searchQuery = "" }: EmployeeReportsProps) {
                             variant={report.flagged ? "destructive" : "outline"}
                             className={`transition-all duration-200 pointer-events-none ${
                               report.flagged
-                                ? "bg-destructive/20 text-destructive border-destructive/30"
-                                : "bg-hr-green/20 text-hr-green border-hr-green/30"
+                                ? "bg-red-500/20 text-red-500 border-red-500/30"
+                                : "bg-[#26890d]/20 text-[#26890d] border-[#26890d]/30"
                             }`}
                           >
                             {report.flagged ? "Flagged" : "Unflagged"}
@@ -195,7 +190,7 @@ export function EmployeeReports({ searchQuery = "" }: EmployeeReportsProps) {
                             variant="ghost"
                             size="sm"
                             onClick={() => handleDownload(report.id)}
-                            className="px-2 text-hr-green hover:bg-transparent hover:text-hr-green border border-hr-green/30"
+                            className="px-2 text-[#26890d] border border-[#26890d]/30 hover:bg-[#2a2f1e] hover:text-[#26890d] hover:border-[#26890d]/30 hover:opacity-100"
                           >
                             <Download size={14} className="mr-1" /> PDF
                           </Button>
@@ -203,10 +198,10 @@ export function EmployeeReports({ searchQuery = "" }: EmployeeReportsProps) {
                       </TableRow>
                     ))
                   ) : (
-                    <TableRow>
+                    <TableRow className="border-[#26890d]/30">
                       <TableCell
                         colSpan={5}
-                        className="text-center py-6 text-muted-foreground"
+                        className="text-center py-6 text-gray-400"
                       >
                         No reports found matching your search
                       </TableCell>
@@ -222,20 +217,20 @@ export function EmployeeReports({ searchQuery = "" }: EmployeeReportsProps) {
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow className="border-hr-green/20">
-                    <TableHead className="text-hr-green w-[130px]">
+                  <TableRow className="border-[#26890d]/30 hover:bg-[#2a2f1e]">
+                    <TableHead className="text-[#26890d] font-semibold w-[130px]">
                       Employee ID
                     </TableHead>
-                    <TableHead className="text-hr-green w-[150px] md:w-[170px]">
+                    <TableHead className="text-[#26890d] font-semibold w-[150px] md:w-[170px]">
                       Name
                     </TableHead>
-                    <TableHead className="text-hr-green w-[150px] md:w-[180px]">
+                    <TableHead className="text-[#26890d] font-semibold w-[150px] md:w-[180px]">
                       Position
                     </TableHead>
-                    <TableHead className="text-hr-green w-[100px]">
+                    <TableHead className="text-[#26890d] font-semibold w-[100px]">
                       Status
                     </TableHead>
-                    <TableHead className="text-center text-hr-green w-[100px]">
+                    <TableHead className="text-center text-[#26890d] font-semibold w-[100px]">
                       Actions
                     </TableHead>
                   </TableRow>
@@ -245,29 +240,21 @@ export function EmployeeReports({ searchQuery = "" }: EmployeeReportsProps) {
                     filteredReports.map((report) => (
                       <TableRow
                         key={report.id}
-                        className="transition-colors duration-200 border-hr-green/10"
-                        onMouseEnter={() => setHoveredRow(report.id)}
-                        onMouseLeave={() => setHoveredRow(null)}
-                        style={{
-                          backgroundColor:
-                            hoveredRow === report.id
-                              ? "rgba(134, 188, 37, 0.1)"
-                              : "transparent",
-                        }}
+                        className="transition-colors duration-200 border-[#26890d]/30 hover:bg-[#2a2f1e]"
                       >
-                        <TableCell className="font-medium text-muted-foreground">
+                        <TableCell className="font-medium text-gray-400">
                           {report.id}
                         </TableCell>
                         <TableCell className="text-white">
                           {report.name}
                         </TableCell>
-                        <TableCell className="text-muted-foreground">
+                        <TableCell className="text-gray-400">
                           {report.position}
                         </TableCell>
                         <TableCell>
                           <Badge
                             variant="outline"
-                            className="bg-hr-green/20 text-hr-green border-hr-green/30 pointer-events-none"
+                            className="transition-all duration-200 pointer-events-none bg-[#26890d]/20 text-[#26890d] border-[#26890d]/30"
                           >
                             Unflagged
                           </Badge>
@@ -277,7 +264,7 @@ export function EmployeeReports({ searchQuery = "" }: EmployeeReportsProps) {
                             variant="ghost"
                             size="sm"
                             onClick={() => handleDownload(report.id)}
-                            className="px-2 text-hr-green hover:bg-transparent hover:text-hr-green border border-hr-green/30"
+                            className="px-2 text-[#26890d] border border-[#26890d]/30 hover:bg-[#2a2f1e] hover:text-[#26890d] hover:border-[#26890d]/30 hover:opacity-100"
                           >
                             <Download size={14} className="mr-1" /> PDF
                           </Button>
@@ -285,10 +272,10 @@ export function EmployeeReports({ searchQuery = "" }: EmployeeReportsProps) {
                       </TableRow>
                     ))
                   ) : (
-                    <TableRow>
+                    <TableRow className="border-[#26890d]/30">
                       <TableCell
                         colSpan={5}
-                        className="text-center py-6 text-muted-foreground"
+                        className="text-center py-6 text-gray-400"
                       >
                         No unflagged reports found matching your search
                       </TableCell>
@@ -304,20 +291,20 @@ export function EmployeeReports({ searchQuery = "" }: EmployeeReportsProps) {
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow className="border-hr-green/20">
-                    <TableHead className="text-hr-green w-[130px]">
+                  <TableRow className="border-[#26890d]/30 hover:bg-[#2a2f1e]">
+                    <TableHead className="text-[#26890d] font-semibold w-[130px]">
                       Employee ID
                     </TableHead>
-                    <TableHead className="text-hr-green w-[150px] md:w-[170px]">
+                    <TableHead className="text-[#26890d] font-semibold w-[150px] md:w-[170px]">
                       Name
                     </TableHead>
-                    <TableHead className="text-hr-green w-[150px] md:w-[180px]">
+                    <TableHead className="text-[#26890d] font-semibold w-[150px] md:w-[180px]">
                       Position
                     </TableHead>
-                    <TableHead className="text-hr-green w-[100px]">
+                    <TableHead className="text-[#26890d] font-semibold w-[100px]">
                       Status
                     </TableHead>
-                    <TableHead className="text-center text-hr-green w-[100px]">
+                    <TableHead className="text-center text-[#26890d] font-semibold w-[100px]">
                       Actions
                     </TableHead>
                   </TableRow>
@@ -327,29 +314,21 @@ export function EmployeeReports({ searchQuery = "" }: EmployeeReportsProps) {
                     filteredReports.map((report) => (
                       <TableRow
                         key={report.id}
-                        className="transition-colors duration-200 border-hr-green/10"
-                        onMouseEnter={() => setHoveredRow(report.id)}
-                        onMouseLeave={() => setHoveredRow(null)}
-                        style={{
-                          backgroundColor:
-                            hoveredRow === report.id
-                              ? "rgba(134, 188, 37, 0.1)"
-                              : "transparent",
-                        }}
+                        className="transition-colors duration-200 border-[#26890d]/30 hover:bg-[#2a2f1e]"
                       >
-                        <TableCell className="font-medium text-muted-foreground">
+                        <TableCell className="font-medium text-gray-400">
                           {report.id}
                         </TableCell>
                         <TableCell className="text-white">
                           {report.name}
                         </TableCell>
-                        <TableCell className="text-muted-foreground">
+                        <TableCell className="text-gray-400">
                           {report.position}
                         </TableCell>
                         <TableCell>
                           <Badge
                             variant="destructive"
-                            className="bg-destructive/20 text-destructive border-destructive/30 pointer-events-none"
+                            className="transition-all duration-200 pointer-events-none bg-red-500/20 text-red-500 border-red-500/30"
                           >
                             Flagged
                           </Badge>
@@ -359,7 +338,7 @@ export function EmployeeReports({ searchQuery = "" }: EmployeeReportsProps) {
                             variant="ghost"
                             size="sm"
                             onClick={() => handleDownload(report.id)}
-                            className="px-2 text-hr-green hover:bg-transparent hover:text-hr-green border border-hr-green/30"
+                            className="px-2 text-[#26890d] border border-[#26890d]/30 hover:bg-[#2a2f1e] hover:text-[#26890d] hover:border-[#26890d]/30 hover:opacity-100"
                           >
                             <Download size={14} className="mr-1" /> PDF
                           </Button>
@@ -367,10 +346,10 @@ export function EmployeeReports({ searchQuery = "" }: EmployeeReportsProps) {
                       </TableRow>
                     ))
                   ) : (
-                    <TableRow>
+                    <TableRow className="border-[#26890d]/30">
                       <TableCell
                         colSpan={5}
-                        className="text-center py-6 text-muted-foreground"
+                        className="text-center py-6 text-gray-400"
                       >
                         No flagged reports found matching your search
                       </TableCell>

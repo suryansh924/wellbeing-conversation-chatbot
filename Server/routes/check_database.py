@@ -1,11 +1,25 @@
 from fastapi import APIRouter, HTTPException, UploadFile, File, Depends
+from typing import List, Dict
 from sqlalchemy.orm import Session
+from sqlalchemy import inspect
 from database.conn import get_db
 from csv_ingest import ingest_csv_data, update_master_feature_vector,ingest_shap_values
-from database.models import Master,Conversation,Message
+from database.models import Master,Conversation,Message, Vibemeter, ActivityTracker, Leave, Onboarding, Performance, Rewards
 
 # Create a router instance
 router = APIRouter()
+
+TABLE_MODELS = {
+    "master": Master,
+    "vibemeter": Vibemeter,
+    "activity_tracker": ActivityTracker,
+    "leave": Leave,
+    "onboarding": Onboarding,
+    "performance": Performance,
+    "rewards": Rewards,
+    "conversation": Conversation,
+    "message": Message,
+}
 
 @router.post("/ingest")
 async def ingest_data(
@@ -90,7 +104,8 @@ def get_employees(db: Session = Depends(get_db)):
                 "Employee_Role": emp.role,
                 "Report": emp.report,
                 "Sentimental_Score": emp.sentimental_score,
-                "Is_Resolved": emp.is_resolved,
+                "is_Flagged": emp.is_Flagged,
+                "Is_Selected": emp.is_selected,
             }
             for emp in employees
         ]
@@ -99,3 +114,37 @@ def get_employees(db: Session = Depends(get_db)):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+    
+
+
+@router.get("/features", response_model=List[Dict])
+async def get_all_table_data(
+    table_name: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Fetch all data from the specified table.
+    """
+    # Validate table name
+    model = TABLE_MODELS.get(table_name)
+    if not model:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Table '{table_name}' not found. Available tables: {', '.join(TABLE_MODELS.keys())}"
+        )
+    
+    try:
+        # Fetch all rows from the table
+        results = db.query(model).all()
+
+        # Convert rows to dictionaries, excluding internal SQLAlchemy attributes
+        def serialize_row(row):
+            return {key: value for key, value in row.__dict__.items() if not key.startswith("_")}
+
+        return [serialize_row(row) for row in results]
+    
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error fetching data from '{table_name}': {str(e)}"
+        )

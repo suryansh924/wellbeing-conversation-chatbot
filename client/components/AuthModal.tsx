@@ -72,11 +72,17 @@ export default function AuthModal() {
 
   //Zod vaidation
   const loginSchema = z.object({
-    email: z.string().regex(/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/).max(50),
-    password: z.string().regex(
-      /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{6,}$/,
-      "Password must contain at least 8 characters, including letters, numbers, and special characters"
-    ).max(20),
+    email: z
+      .string()
+      .regex(/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/)
+      .max(50),
+    password: z
+      .string()
+      .regex(
+        /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{6,}$/,
+        "Password must contain at least 8 characters, including letters, numbers, and special characters"
+      )
+      .max(20),
   });
   const registerSchema = z
     .object({
@@ -164,7 +170,7 @@ export default function AuthModal() {
       // setLoginPassword("");
       // setRegName("");
       // setRegEmail("");
-      // setRegPassword(""); 
+      // setRegPassword("");
       // setRegConfirmPassword("");
       setError("");
       setMode("login");
@@ -216,10 +222,9 @@ export default function AuthModal() {
         // setOpen(false);
         setSignInModalVisible(false);
       } catch (err: unknown) {
-        setError("Invalid Credentials")
-      }
-      finally{
-        setLoading(false)
+        setError("Invalid Credentials");
+      } finally {
+        setLoading(false);
       }
     } else {
       const newError = { email: 0, password: 0 };
@@ -237,7 +242,7 @@ export default function AuthModal() {
     setLoading(true);
     try {
       const exists = await checkEmployeeId(regEmployeeId);
-      console.log(exists)
+      console.log(exists);
       if (!exists) {
         setError("Employee ID not found.");
       } else {
@@ -357,7 +362,9 @@ export default function AuthModal() {
     <Dialog open={signInModalVisible} onOpenChange={handleOpenChange}>
       {/* Trigger button */}
       <DialogTrigger asChild>
-        <Button className='bg-black text-white cursor-pointer text-lg font-semibold px-10 py-4 h-auto rounded-full'>Get Started</Button>
+        <Button className="bg-black text-white cursor-pointer text-lg font-semibold px-10 py-4 h-auto rounded-full">
+          Get Started
+        </Button>
       </DialogTrigger>
 
       <DialogContent className="sm:max-w-[425px] dark bg-[#131313] text-white">
@@ -448,7 +455,6 @@ export default function AuthModal() {
               </Button>
             </DialogFooter>
 
-            
             <p className="text-center  text-sm mt-4">
               Don&apos;t have an account?{" "}
               <span

@@ -18,6 +18,7 @@ import {
   TwitterAuthProvider,
 } from "firebase/auth";
 import { app } from "@/firebase/config";
+import { useRouter } from "next/navigation";
 
 const auth = getAuth(app);
 
@@ -29,7 +30,7 @@ export interface Employee {
   is_selected: boolean;
   sentimental_score: number;
   shap_values: string[];
-  is_Flagged:boolean
+  is_Flagged: boolean;
 }
 
 export interface HRUser {
@@ -67,6 +68,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [hrData, setHRData] = useState<HRUser | null>(null);
   const [loading, setLoading] = useState(false);
   const [signInModalVisible, setSignInModalVisible] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -154,7 +156,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const fetchEmployeeProfile = async () => {
     try {
       const token = localStorage.getItem("access_token");
-      console.log(token)
+      console.log(token);
       const response = await fetch("http://127.0.0.1:8000/api/user/employee", {
         method: "GET",
         headers: {
@@ -207,6 +209,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLogged(false);
     localStorage.removeItem("access_token");
     localStorage.removeItem("user_role");
+    router.push("/");
   };
 
   return (
