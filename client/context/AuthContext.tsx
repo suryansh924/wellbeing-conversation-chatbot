@@ -29,7 +29,7 @@ export interface Employee {
   is_selected: boolean;
   sentimental_score: number;
   shap_values: string[];
-  is_resolved:boolean
+  is_resolved: boolean;
 }
 
 export interface HRUser {
@@ -154,7 +154,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const fetchEmployeeProfile = async () => {
     try {
       const token = localStorage.getItem("access_token");
-      console.log(token)
+      console.log(token);
       const response = await fetch("http://127.0.0.1:8000/api/user/employee", {
         method: "GET",
         headers: {
