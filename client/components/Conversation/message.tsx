@@ -112,7 +112,7 @@ function Message({ id, content, isUser, timestamp }: MessageProps) {
           <div
             className={`px-4 py-3 rounded-lg ${
               isUser
-                ? "bg-deloitte-green text-black rounded-br-none"
+                ? "bg-green-900 text-white rounded-br-none"
                 : "bg-secondary text-foreground rounded-bl-none"
             }`}
           >

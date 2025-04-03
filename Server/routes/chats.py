@@ -175,6 +175,7 @@ def get_conversation_history(employee_id: str,db:Session = Depends(get_db)):
     try:
         conversations = db.query(Conversation).filter(Conversation.employee_id == employee_id).all()
         if not conversations:
+            return []
             raise HTTPException(status_code=404, detail="No conversations found for this employee ID")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error fetcging the conversations: {str(e)}")
@@ -238,6 +239,16 @@ def get_insights(conversation_id: int, db: Session = Depends(get_db)):
         )
         # 5. Generate insights using Gemini
         insights = chat_with_gpt4o(insight_prompt)
+
+        chatbot_message = Message(
+            content=insights,
+            sender_type="chatbot"
+        )
+        db.add(chatbot_message)
+        db.commit()
+        db.refresh(chatbot_message)
+
+        conversation.message_ids.append(chatbot_message.id)
 
         # 6. Return the insights
         return {

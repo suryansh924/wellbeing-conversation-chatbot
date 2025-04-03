@@ -29,6 +29,7 @@ export interface Employee {
   is_selected: boolean;
   sentimental_score: number;
   shap_values: string[];
+  is_resolved:boolean
 }
 
 export interface HRUser {

@@ -179,7 +179,7 @@ export default function AuthModal() {
   const handlePostAuth = async () => {
     try {
       const profile = await fetchEmployeeProfile();
-      if (profile.is_selected) {
+      if (profile.is_selected && !profile.is_resolved) {
         router.push("/conversation/");
       } else {
         router.push("/dashboard");

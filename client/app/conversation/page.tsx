@@ -25,8 +25,10 @@ interface TypingIndicator {
 }
 
 export default function ConversationPage() {
-  // const server = "http://127.0.0.1:8000";
+  const server = "http://127.0.0.1:8000";
 
+  const TotalQuestions = 6
+  
   const { employeeData } = useAuth();
   const router = useRouter();
   const [employee_name, setEmployee_Name] = useState("");
@@ -34,7 +36,8 @@ export default function ConversationPage() {
   const [shap, setShap] = useState<string[]>([]);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [selectedQuestions, setSelectedQuestions] = useState<string[]>([]);
-  const [maxQuestions, setMaxQuestions] = useState(6);
+
+  const [maxQuestions, setMaxQuestions] = useState(TotalQuestions);
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [chatHistory, setChatHistory] = useState<
@@ -58,55 +61,113 @@ export default function ConversationPage() {
   const audioChunksRef = useRef<Blob[]>([]);
   const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
   const [isAudioProcessing, setIsAudioProcessing] = useState(false);
+  const [hasEnded, setHasEnded]  = useState(false);
+
+
+  const checkForIncompleteConv = async () => {
+    try {
+      console.log("employee id is:", employeeData.employee_id)
+      const response = await axios.get(
+        `http://127.0.0.1:8000/api/conversation/history/employee/${employeeData.employee_id}`
+      );
+
+      const conversations = response.data.conversations;
+      if (!conversations || conversations.length === 0) return false;
+
+      const lastConversation = conversations.slice(-1)[0]; // Get the last element of the array
+
+      if (lastConversation.date === new Date().toISOString().split("T")[0]) {
+        const messagesResponse = await axios.get(
+          `http://127.0.0.1:8000/api/conversation/history/${lastConversation.id}`
+        );
+
+        // Transform the message format
+        let questionsAsked = 0;
+        const formattedMessages: Message[] = messagesResponse.data.map(
+          (msg: any) => {
+            if (msg.sender_type === "chatbot") {
+              questionsAsked++; // Count chatbot messages
+            }
+            return {
+              id: msg.id.toString(),
+              content: msg.content,
+              isUser: msg.sender_type === "employee", // isUser is true if the sender is an employee
+              timestamp: new Date(), // You might need to add the actual timestamp from the API if available
+            };
+          }
+        );
+        console.log("questions Asked:", questionsAsked-1);
+        setMaxQuestions(TotalQuestions-questionsAsked-1);
+        console.log(maxQuestions)
+        setMessages(formattedMessages);
+        setConversationId(lastConversation.id)
+        return true;
+      } else return false;
+    } catch (error) {
+      console.error("Error fetching conversations:", error);
+    }
+  }
+  const startConv = async () => {
+    console.log("Starting Conversation")
+    try {
+      const response = await axios.post(
+        `${server}/api/conversation/start`,
+        {
+          employee_name: employeeData?.employee_name,
+          employee_id: employeeData?.employee_id,
+          shap: shap,
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      const data = response.data;
+      console.log("On Conv Page",data);
+
+      setConversationId(data.conversation_id);
+      setSelectedQuestions(data.selected_questions);
+
+      setMessages([
+        {
+          id: "welcome",
+          content: data.chatbot_response,
+          isUser: false,
+          timestamp: new Date(),
+        },
+      ]);
+    } catch (error) {
+      console.error("Error starting conversation:", error);
+    }
+  }
+
+  const handleCheckForIncompleteConv = async () => {
+    const res = await checkForIncompleteConv();  // Wait for the promise to resolve
+    console.log("CheckIncompleteConv: ", res);  // Log the result of checkForIncompleteConv
+  
+    if (!res) {
+      startConv();  // Only call startConv if res is falsy (or whatever condition you have)
+    }
+  };
 
   useEffect(() => {
+
     if (employeeData) {
-      console.log(employeeData);
+      console.log("Setting employee data from auth context:", employeeData);
       setEmployee_Id(employeeData.employee_id);
       setEmployee_Name(employeeData.employee_name);
       setShap(employeeData.shap_values);
+
+      handleCheckForIncompleteConv();
     }
   }, [employeeData]);
 
-  useEffect(() => {
-    if (employee_id && employee_name && shap.length > 0) {
-      const startConversation = async () => {
-        try {
-          const response = await axios.post(
-            `${server}/api/conversation/start`,
-            {
-              employee_name: employee_name,
-              employee_id: employee_id,
-              shap: shap,
-            },
-            {
-              headers: {
-                "Content-Type": "application/json",
-              },
-            }
-          );
-          const data = response.data;
-          console.log(data);
+  // useEffect(() => {
+  //   handleCheckForIncompleteConv();
+  // }, [employeeData]);
 
-          setConversationId(data.conversation_id);
-          setSelectedQuestions(data.selected_questions);
 
-          setMessages([
-            {
-              id: "welcome",
-              content: data.chatbot_response,
-              isUser: false,
-              timestamp: new Date(),
-            },
-          ]);
-        } catch (error) {
-          console.error("Error starting conversation:", error);
-        }
-      };
-
-      startConversation();
-    }
-  }, [employee_id, employee_name, shap]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -205,10 +266,8 @@ export default function ConversationPage() {
 
   const handleSendMessage = async () => {
     setIsLoading(true);
-    setMaxQuestions(maxQuestions - 1);
-    console.log(maxQuestions);
 
-    if (inputValue.trim() && conversationId) {
+    if (inputValue.trim()) {
       const userMessage: Message = {
         id: `user-${Date.now()}`,
         content: inputValue,
@@ -227,6 +286,11 @@ export default function ConversationPage() {
         "Thank you for your time! The conversation is now over. Here are few insights for your improvement...";
       if (maxQuestions != 0) {
         try {
+          console.log("Posting message for Employee:")
+          console.log("employee_name:",employee_name)
+          console.log("employee_name:",employee_id);
+          console.log("Conversation_id:",conversationId);
+
           const response = await axios.post(
             `${server}/api/conversation/message`,
             {
@@ -247,11 +311,16 @@ export default function ConversationPage() {
           const data = await response.data;
           setChatHistory(data.chat_history);
           chatbot_response = data.chatbot_response;
+
+          setMaxQuestions(maxQuestions - 1);
+          console.log(maxQuestions);      
         } catch (error) {
           console.error("Error sending message:", error);
           chatbot_response =
             "I'm having trouble connecting right now. Please try again later.";
         }
+      }else{
+        setHasEnded(true)
       }
 
       setTimeout(() => {
@@ -315,7 +384,7 @@ export default function ConversationPage() {
           type: "audio/wav",
         });
         await processAudio(audioBlob);
-    
+
         // Release the media recorder
         mediaRecorderRef.current = null;
         audioChunksRef.current = [];
@@ -385,6 +454,7 @@ export default function ConversationPage() {
 
           {messages.map((message) => (
             <Message
+              key={message.id}
               id={message.id}
               content={message.content}
               isUser={message.isUser}
@@ -436,7 +506,7 @@ export default function ConversationPage() {
       </ScrollArea>
 
       <div className="border-t border-border p-4">
-        {maxQuestions <= 0 && (
+        {hasEnded && (
           <div className=" fixed bottom-4 right-4 z-10">
             <Button
               className="bg-black text-white hover:bg-gray-800"
@@ -463,7 +533,7 @@ export default function ConversationPage() {
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={handleKeyDown}
-              disabled={isLoading}
+              disabled={isLoading || hasEnded}
             />
           </div>
           {/* Microphone button with improved states */}
@@ -483,11 +553,11 @@ export default function ConversationPage() {
               micPermission === "denied"
                 ? "Microphone access denied"
                 : isRecording
-                ? "Stop recording"
-                : "Start recording"
+                  ? "Stop recording"
+                  : "Start recording"
             }
           >
-             {/* onClick={isRecording ? stopRecording : startRecording}
+            {/* onClick={isRecording ? stopRecording : startRecording}
             className={`${
               isRecording ? "bg-destructive text-destructive-foreground" : ""
             }`}
