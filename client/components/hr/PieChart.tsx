@@ -37,12 +37,12 @@ export function HRPieChart({ flaggedCount, unflaggedCount }: HRPieChartProps) {
     { name: "Flagged", value: flaggedCount, color: COLORS[1] },
   ];
 
-  const renderColorfulLegendText = (
-    value: string,
-    entry: { color: string }
-  ) => {
+  const renderColorfulLegendText = (value: string, entry: any) => {
+    const color = entry.color;
     return (
-      <span style={{ color: entry.color, fontWeight: "bold" }}>{value}</span>
+      <span className="hr-chart-legend-text" style={{ color }}>
+        {value}
+      </span>
     );
   };
 
@@ -82,22 +82,42 @@ export function HRPieChart({ flaggedCount, unflaggedCount }: HRPieChartProps) {
         const x = numCx + radius * Math.cos(-numMidAngle * RADIAN);
         const y = numCy + radius * Math.sin(-numMidAngle * RADIAN);
 
+        // Create connecting line
+        const lineX1 =
+          numCx + numOuterRadius * 0.95 * Math.cos(-numMidAngle * RADIAN);
+        const lineY1 =
+          numCy + numOuterRadius * 0.95 * Math.sin(-numMidAngle * RADIAN);
+        const lineX2 =
+          numCx + numOuterRadius * 1.05 * Math.cos(-numMidAngle * RADIAN);
+        const lineY2 =
+          numCy + numOuterRadius * 1.05 * Math.sin(-numMidAngle * RADIAN);
+
         return (
-          <text
-            x={x}
-            y={y}
-            fill={COLORS[numIndex % COLORS.length]}
-            textAnchor={x > numCx ? "start" : "end"}
-            dominantBaseline="central"
-            fontSize="13px"
-            fontWeight="600"
-            style={{
-              filter: "drop-shadow(0px 0px 1px rgba(0, 0, 0, 0.8))",
-              pointerEvents: "none",
-            }}
-          >
-            {`${name}: ${(numPercent * 100).toFixed(0)}%`}
-          </text>
+          <>
+            <line
+              x1={lineX1}
+              y1={lineY1}
+              x2={lineX2}
+              y2={lineY2}
+              stroke={COLORS[numIndex % COLORS.length]}
+              className="hr-chart-line"
+            />
+            <text
+              x={x}
+              y={y}
+              fill={COLORS[numIndex % COLORS.length]}
+              textAnchor={x > numCx ? "start" : "end"}
+              dominantBaseline="central"
+              fontSize="13px"
+              fontWeight="600"
+              style={{
+                filter: "drop-shadow(0px 0px 1px rgba(0, 0, 0, 0.8))",
+                pointerEvents: "none",
+              }}
+            >
+              {`${name}: ${(numPercent * 100).toFixed(0)}%`}
+            </text>
+          </>
         );
       } else {
         const radius = numInnerRadius + (numOuterRadius - numInnerRadius) * 0.6;
@@ -124,14 +144,12 @@ export function HRPieChart({ flaggedCount, unflaggedCount }: HRPieChartProps) {
   );
 
   return (
-    <Card className="shadow-card overflow-hidden">
+    <Card className={`hr-chart-card ${isAnimating ? "hr-chart-appear" : ""}`}>
       <CardHeader className="pb-2">
-        <CardTitle className="text-xl font-medium text-gray-200">
-          Employee Flag Status
-        </CardTitle>
+        <CardTitle className="hr-chart-title">Employee Flag Status</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="h-[300px] w-full">
+        <div className="hr-chart-container">
           <ResponsiveContainer width="100%" height="100%">
             <RechartsPC>
               <Pie
@@ -146,8 +164,15 @@ export function HRPieChart({ flaggedCount, unflaggedCount }: HRPieChartProps) {
                 animationDuration={800}
                 label={renderCustomizedLabel}
                 onClick={handleClick}
-                onMouseEnter={(_, index) => setHoverSlice(index)}
-                onMouseLeave={() => setHoverSlice(null)}
+                onMouseEnter={(data, index) => {
+                  setHoverSlice(index);
+                }}
+                onMouseLeave={() => {
+                  setHoverSlice(null);
+                }}
+                isAnimationActive={false}
+                strokeWidth={1}
+                stroke="#131313"
               >
                 {data.map((_, index) => (
                   <Cell
@@ -176,7 +201,7 @@ export function HRPieChart({ flaggedCount, unflaggedCount }: HRPieChartProps) {
               <Legend
                 layout="horizontal"
                 verticalAlign="bottom"
-                // formatter={renderColorfulLegendText}
+                formatter={renderColorfulLegendText}
               />
             </RechartsPC>
           </ResponsiveContainer>
