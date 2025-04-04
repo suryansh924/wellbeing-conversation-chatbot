@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { z } from 'zod';
+import { motion, AnimatePresence } from "framer-motion";
 
 // CSS classes to be added to globals.css if not already there
 const cssClasses = `
@@ -62,6 +63,33 @@ const cssClasses = `
 export default function HRLoginModal() {
   const { signInHR } = useAuth();
   const router = useRouter();
+  
+  // Animation variants
+  const formVariants = {
+    hidden: { 
+      opacity: 0, 
+      y: 20, 
+      scale: 0.95 
+    },
+    visible: { 
+      opacity: 1, 
+      y: 0, 
+      scale: 1,
+      transition: { 
+        duration: 0.4, 
+        ease: "easeOut" 
+      }
+    },
+    exit: { 
+      opacity: 0, 
+      y: -20, 
+      scale: 0.95,
+      transition: { 
+        duration: 0.3, 
+        ease: "easeIn" 
+      }
+    }
+  };
   
   //zod validation
   const loginSchema = z.object({
@@ -126,9 +154,9 @@ export default function HRLoginModal() {
     <Dialog open={open} onOpenChange={setOpen}>
       {/* Trigger button to open the modal */}
       <DialogTrigger asChild>
-      <AnimatedButton
-  className="bg-white border-1 border-black/50 text-black cursor-pointer text-lg font-semibold px-10 py-4 h-auto rounded-full shadow-md hover:shadow-lg hover:bg-white/95 hover:border-black/90 transition-all duration-300 group relative overflow-hidden"
->
+        <AnimatedButton
+          className="bg-white border-1 border-black/50 text-black cursor-pointer text-lg font-semibold px-10 py-4 h-auto rounded-full shadow-md hover:shadow-lg hover:bg-white/95 hover:border-black/90 transition-all duration-300 group relative overflow-hidden"
+        >
           Login as HR
         </AnimatedButton>
       </DialogTrigger>
@@ -146,67 +174,91 @@ export default function HRLoginModal() {
           </p>
         </DialogHeader>
 
-        {/* Login form */}
+        {/* Login form with animation */}
         <div className="p-6">
-          <form onSubmit={handleLoginSubmit} className="grid gap-4">
-            <div className="grid gap-2">
-              <Label htmlFor="email" className="text-sm font-medium">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                name="email"
-                onChange={handleLoginChange}
-                placeholder="HR@example.com"
-                required={true}
-                className="auth-input p-3 rounded-md"
-              />
-              {Loginerrors.email ? 
-                <p className="text-red-500 text-xs mt-1">Enter valid email.</p> : null}
-            </div>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key="hr-login-form"
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              variants={formVariants}
+            >
+              <form onSubmit={handleLoginSubmit} className="grid gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="email" className="text-sm font-medium">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    name="email"
+                    onChange={handleLoginChange}
+                    placeholder="HR@example.com"
+                    required={true}
+                    className="auth-input p-3 rounded-md"
+                  />
+                  {Loginerrors.email ? 
+                    <motion.p 
+                      initial={{ opacity: 0, y: -5 }} 
+                      animate={{ opacity: 1, y: 0 }}
+                      className="text-red-500 text-xs mt-1">
+                      Enter valid email.
+                    </motion.p> : null}
+                </div>
 
-            <div className="grid gap-2">
-              <Label htmlFor="password" className="text-sm font-medium">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                name="password"
-                onChange={handleLoginChange}
-                placeholder="••••••••"
-                required={true}
-                className="auth-input p-3 rounded-md"
-              />
-              {Loginerrors.password ? 
-                <p className="text-red-500 text-xs mt-1">Password must contain at least 8 characters, including letters, numbers, and special characters.</p> : null}
-            </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="password" className="text-sm font-medium">Password</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    name="password"
+                    onChange={handleLoginChange}
+                    placeholder="••••••••"
+                    required={true}
+                    className="auth-input p-3 rounded-md"
+                  />
+                  {Loginerrors.password ? 
+                    <motion.p 
+                      initial={{ opacity: 0, y: -5 }} 
+                      animate={{ opacity: 1, y: 0 }}
+                      className="text-red-500 text-xs mt-1">
+                      Password must contain at least 8 characters, including letters, numbers, and special characters.
+                    </motion.p> : null}
+                </div>
 
-            {/* Error message */}
-            {error && (
-              <div className="bg-red-500/10 border border-red-500/20 text-red-500 p-3 rounded-md text-sm error-message">
-                {error}
-              </div>
-            )}
-
-            {/* Submit button */}
-            <DialogFooter className="mt-4">
-              <AnimatedButton
-                type="submit"
-                disabled={loading}
-                className="cursor-pointer font-medium text-base w-full py-3"
-              >
-                {loading ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Logging In...
-                  </span>
-                ) : (
-                  "Sign In to HR Dashboard"
+                {/* Error message with animation */}
+                {error && (
+                  <motion.div 
+                    initial={{ opacity: 0, y: -10 }} 
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-red-500/10 border border-red-500/20 text-red-500 p-3 rounded-md text-sm error-message"
+                  >
+                    {error}
+                  </motion.div>
                 )}
-              </AnimatedButton>
-            </DialogFooter>
-          </form>
+
+                {/* Submit button */}
+                <DialogFooter className="mt-4">
+                  <AnimatedButton
+                    type="submit"
+                    disabled={loading}
+                    className="cursor-pointer font-medium text-base w-full py-3"
+                  >
+                    {loading ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Logging In...
+                      </span>
+                    ) : (
+                      "Sign In to HR Dashboard"
+                    )}
+                  </AnimatedButton>
+                </DialogFooter>
+              </form>
+            </motion.div>
+          </AnimatePresence>
         </div>
       </DialogContent>
     </Dialog>
