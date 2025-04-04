@@ -39,6 +39,7 @@ class HRUser(Base):
     email = Column(String, unique=True, index=True, nullable=False)
     password = Column(String, nullable=False)                           # Hashed password.
     role = Column(String, default="admin")                              # Default: "admin".  
+    daily_report= Column(String, default="")                  # Default: empty string.
 
 
 class Conversation(Base):

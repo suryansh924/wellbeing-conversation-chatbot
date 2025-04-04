@@ -9,6 +9,7 @@ from database.conn import SessionLocal
 from pydantic import BaseModel, EmailStr
 from typing import List
 from datetime import datetime, timedelta, timezone
+from database.conn import get_db
 import jwt
 
 
@@ -19,16 +20,17 @@ import jwt
 # Base.metadata.create_all(bind=engine)
 SECRET_KEY = "your-secret-key"  # Replace with your secret key
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+# 10 days
+ACCESS_TOKEN_EXPIRE_MINUTES = 10 * 24 * 60
 
 router = APIRouter()
 
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+# def get_db():
+#     db = SessionLocal()
+#     try:
+#         yield db
+#     finally:
+#         db.close()
 
 
 # Schemas
@@ -40,7 +42,6 @@ class EmployeeCheckResponse(BaseModel):
     exists: bool
 class LoginUser(BaseModel):
     email: EmailStr
-    password: str
 
 class RegisterUser(BaseModel):
     email: EmailStr
@@ -69,7 +70,33 @@ def create_access_token(data: dict, expires_delta: timedelta = None):
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
-
+def verify_user(token: str):
+    """
+    Verifies the JWT and returns the decoded claims.
+    """
+    try:
+        db=next(get_db())
+        token= token.split(" ")[1]  # Extract token from "Bearer <token>"
+        decoded_claims = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        emp_id = decoded_claims.get("emp_id")
+        hr_id = decoded_claims.get("hr_email")
+        if emp_id:
+            user= db.query(Master).filter(Master.employee_id == emp_id).first()
+            if not user:
+                raise HTTPException(status_code=401, detail="Invalid token")
+            return {"user_type": "employee", "user_id": emp_id}
+        
+        if hr_id:
+            return {"user_type": "hr", "user_id": hr_id}
+        
+        raise HTTPException(status_code=401, detail="Invalid token")
+        
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token has expired")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    finally:
+        db.close()
 
 class UserResponse(BaseModel):
     employee_id: str
@@ -175,24 +202,6 @@ def register(user: RegisterUser, db: Session = Depends(get_db)):
     access_token = create_access_token(data={"emp_id": user.emp_id,"role":"employee"})
     return {"token": access_token}
 
-def verify_user(token: str, db: Session = Depends(get_db)) -> dict:
-    """
-    Verifies the JWT and returns the decoded claims.
-    """
-    try:
-        decoded_claims = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        emp_id = decoded_claims.get("emp_id")
-        role = decoded_claims.get("role")
-
-        if not emp_id or not role or role!="employee":
-            raise HTTPException(status_code=401, detail="Invalid token payload")
-
-        return {"emp_id": emp_id, "role": role}
-
-    except jwt.ExpiredSignatureError:
-        raise HTTPException(status_code=401, detail="Token has expired")
-    except jwt.JWTError:
-        raise HTTPException(status_code=401, detail="Invalid token")
 
 @router.get("/employee")
 def get_employee(authorization: str = Header(..., convert_underscores=False), db: Session = Depends(get_db)):
