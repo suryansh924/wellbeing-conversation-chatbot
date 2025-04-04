@@ -22,6 +22,7 @@ interface Employee {
   Is_Flagged: boolean;
   Report: string;
   Feature_Vector: string;
+  Conversation_Completed: boolean;
 }
 
 const HRDashboard: React.FC = () => {
@@ -30,7 +31,12 @@ const HRDashboard: React.FC = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(true);
   const [isLoaded, setIsLoaded] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>("");
+
   const [employees, setEmployees] = useState<Employee[]>([]);
+  const [employeesWithReports, setEmployeesWithReports] = useState<Employee[]>(
+    []
+  );
+
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const analyticsRef = useRef<HTMLDivElement | null>(null);
@@ -64,7 +70,7 @@ const HRDashboard: React.FC = () => {
         const selectedEmployees = response.data.employees.filter(
           (employee: any) => employee.Is_Selected === true
         );
-        console.log("Selected Employee data:", response.data);
+        console.log("Selected Employee data:", selectedEmployees);
         setEmployees(selectedEmployees);
         setError(null);
       } catch (error) {
@@ -76,6 +82,25 @@ const HRDashboard: React.FC = () => {
       }
     };
     fetchAllEmployees();
+
+    const fetchTodaysConv = async () => {
+      console.log("Fetching Todays Conv:");
+      try {
+        setLoading(true);
+        const response = await axios.get(
+          `${server}/api/conversation/todays_reports`
+        );
+        setEmployeesWithReports(response.data);
+        setError(null);
+      } catch (error) {
+        console.error("Error fetching employees with reports:", error);
+        setError("Failed to load employee data");
+      } finally {
+        setLoading(false);
+        setIsLoaded(true);
+      }
+    };
+    fetchTodaysConv();
   }, []);
 
   const selectedStats = employees.reduce(
@@ -173,6 +198,7 @@ const HRDashboard: React.FC = () => {
                 <EmployeeReports
                   searchQuery={searchQuery}
                   employees={employees}
+                  employeesWithReports={employeesWithReports}
                 />
               )}
             </div>

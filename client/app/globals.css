@@ -271,6 +271,49 @@
     animation: chartAppear 0.8s ease-out forwards;
   }
 
+  /* Sonner Toast Styling */
+  .sonner-toast {
+    --normal-bg: #252525 !important;
+    --normal-text: #f0f0f0 !important;
+    --normal-border: #333333 !important;
+    --success-bg: #252525 !important;
+    --success-border: #26890d !important;
+    --success-text: #f0f0f0 !important;
+    --error-bg: #2a1a1a !important; 
+    --error-border: #e11d48 !important; 
+    --error-text: #f0f0f0 !important;
+  }
+
+  .sonner-toast[data-type="error"] {
+    background-color: #2a1a1a !important;
+    border-left: 4px solid #e11d48 !important;
+  }
+
+  .sonner-toast[data-type="error"] .sonner-toast-title {
+    color: #f87171 !important;
+  }
+
+  .sonner-toast[data-type="error"] .sonner-toast-description {
+    color: #fca5a5 !important;
+  }
+
+  .sonner-toast[data-type="success"] {
+    background-color: #252525 !important;
+    border-left: 4px solid #26890d !important;
+  }
+
+  .sonner-toast .sonner-toast-close-button {
+    color: #d1d5db !important;
+  }
+
+  .sonner-toast[data-type="error"] .sonner-toast-close-button {
+    color: #f87171 !important;
+  }
+
+  .sonner-toast[data-type="error"] .sonner-toast-close-button:hover {
+    color: #ef4444 !important;
+  }
+
   /* HR Upload Component */
   .hr-upload-container {
     @apply bg-hr-black/80 backdrop-blur-sm border border-[#26890d]/20 rounded-xl shadow-xl p-6;

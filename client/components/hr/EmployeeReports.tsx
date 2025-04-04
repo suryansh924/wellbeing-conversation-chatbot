@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+// import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -12,12 +13,15 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { FileText, Download, View } from "lucide-react";
+import { report } from "process";
 
 interface EmployeeReport {
   id: string;
   name: string;
   position: string;
   flagged: boolean;
+  conversation_completed: boolean;
+  report_link: string;
 }
 interface Employee {
   Employee_ID: string;
@@ -29,59 +33,103 @@ interface Employee {
   Is_Flagged: boolean;
   Report: string;
   Feature_Vector: string;
+  Conversation_Completed: boolean;
 }
 
 interface EmployeeReportsProps {
   searchQuery?: string;
   employees: Employee[];
+  employeesWithReports: Employee[];
 }
 
-export function EmployeeReports({ searchQuery = "" , employees = [] }: EmployeeReportsProps) {
+export function EmployeeReports({
+  searchQuery = "",
+  employees = [],
+  employeesWithReports = [],
+}: EmployeeReportsProps) {
   // console.log("Props received:", employees);
   const [hoveredRow, setHoveredRow] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("all");
 
-  
-  const employeeReports: EmployeeReport[] = useMemo(
+  const selectedEmployee: EmployeeReport[] = useMemo(
     () =>
       (employees || []).map((employee) => ({
         id: employee.Employee_ID,
         name: employee.Employee_Name,
         position: employee.Employee_Role,
         flagged: employee.Is_Flagged,
+        conversation_completed: employee.Conversation_Completed,
+        report_link: "#",
       })),
     [employees]
   );
 
-  useEffect(() => {
-    if (employees) {
-      console.log("Employee data received:", employees);
-    }
-  }, [employees]);
-  
-  
-  const handleDownload = (employeeId: string) => {
-    // Replace this with actual PDF download functionality
-    console.log(`Downloading report for employee ${employeeId}`);
-    alert(`Downloading report for employee ${employeeId}`);
+  const conversed_employees: EmployeeReport[] = useMemo(
+    () =>
+      (employeesWithReports || []).map((employee) => ({
+        id: employee.Employee_ID,
+        name: employee.Employee_Name,
+        position: employee.Employee_Role,
+        flagged: employee.Is_Flagged,
+        conversation_completed: employee.Conversation_Completed,
+        report_link: employee.Report,
+      })),
+    [employeesWithReports]
+  );
+
+  // useEffect(() => {
+  //   if (employees) {
+  //     console.log("Employee data received:", selectedEmployee);
+  //   }
+  // }, [employees]);
+
+  // useEffect(() => {
+  //   if (filteredReports) {
+  //     console.log("Filtered Reports:", filteredReports);
+  //   }
+  // }, [activeTab]);
+
+  const handleDownload = (pdfUrl: string) => {
+    window.open(pdfUrl, "_blank");
   };
 
   // Filter reports based on search query
-  const filteredBySearch = searchQuery
-    ? employeeReports.filter(
+  const filterSelectedEmp = searchQuery
+    ? selectedEmployee.filter(
         (report) =>
           report.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
           report.name.toLowerCase().includes(searchQuery.toLowerCase())
       )
-    : employeeReports;
+    : selectedEmployee;
+
+  const filterConversedEmp = searchQuery
+    ? conversed_employees.filter(
+        (report) =>
+          report.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          report.name.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : conversed_employees;
 
   // Filter the reports based on the active tab
-  const filteredReports =
-    activeTab === "all"
-      ? filteredBySearch
-      : filteredBySearch.filter((report) =>
-          activeTab === "flagged" ? report.flagged : !report.flagged
-        );
+  // const filteredReports =
+  //   activeTab === "all"
+  //     ? filterSelectedEmp
+  //     : filterSelectedEmp.filter((report) =>
+  //         activeTab === "flagged" ? report.flagged :report.flagged
+  //       );
+
+  useEffect(() => {
+    console.log("Conversed Employees:", conversed_employees);
+  }, [conversed_employees]);
+
+  const filteredReports = useMemo(() => {
+    if (activeTab === "all") return filterSelectedEmp;
+    if (activeTab === "flagged")
+      return filterConversedEmp.filter((r) => r.flagged);
+    if (activeTab === "unflagged")
+      return filterConversedEmp.filter((r) => !r.flagged);
+    return [];
+  }, [activeTab, filterSelectedEmp, filterConversedEmp]);
 
   return (
     <Card className="shadow-card bg-card border border-[#26890d]/30">
@@ -102,22 +150,34 @@ export function EmployeeReports({ searchQuery = "" , employees = [] }: EmployeeR
               value="all"
               className="data-[state=active]:bg-[#26890d] data-[state=active]:!text-black text-white hover:bg-[#0f3d17] transition-colors duration-200 border border-[#26890d]/60 rounded-md px-2 sm:px-3 md:px-4 py-1 md:py-2 text-xs sm:text-sm md:text-base flex justify-center items-center whitespace-nowrap"
             >
-              <span className="sm:hidden data-[state=active]:!text-black">All</span>
-              <span className="hidden sm:block data-[state=active]:!text-black">All Reports</span>
+              <span className="sm:hidden data-[state=active]:!text-black">
+                All
+              </span>
+              <span className="hidden sm:block data-[state=active]:!text-black">
+                All Reports
+              </span>
             </TabsTrigger>
             <TabsTrigger
               value="unflagged"
               className="data-[state=active]:bg-[#26890d] data-[state=active]:!text-black text-white hover:bg-[#0f3d17] transition-colors duration-200 border border-[#26890d]/60 rounded-md px-2 sm:px-3 md:px-4 py-1 md:py-2 text-xs sm:text-sm md:text-base flex justify-center items-center whitespace-nowrap"
             >
-              <span className="sm:hidden data-[state=active]:!text-black">Unflagged</span>
-              <span className="hidden sm:block data-[state=active]:!text-black">Unflagged Reports</span>
+              <span className="sm:hidden data-[state=active]:!text-black">
+                Unflagged
+              </span>
+              <span className="hidden sm:block data-[state=active]:!text-black">
+                Unflagged Reports
+              </span>
             </TabsTrigger>
             <TabsTrigger
               value="flagged"
               className="data-[state=active]:bg-[#26890d] data-[state=active]:!text-black text-white hover:bg-[#0f3d17] transition-colors duration-200 border border-[#26890d]/60 rounded-md px-2 sm:px-3 md:px-4 py-1 md:py-2 text-xs sm:text-sm md:text-base flex justify-center items-center whitespace-nowrap"
             >
-              <span className="sm:hidden data-[state=active]:!text-black">Flagged</span>
-              <span className="hidden sm:block data-[state=active]:!text-black">Flagged Reports</span>
+              <span className="sm:hidden data-[state=active]:!text-black">
+                Flagged
+              </span>
+              <span className="hidden sm:block data-[state=active]:!text-black">
+                Flagged Reports
+              </span>
             </TabsTrigger>
           </TabsList>
 
@@ -139,9 +199,9 @@ export function EmployeeReports({ searchQuery = "" , employees = [] }: EmployeeR
                     <TableHead className="text-[#26890d] font-semibold w-[100px]">
                       Status
                     </TableHead>
-                    <TableHead className="text-center text-[#26890d] font-semibold w-[100px]">
+                    {/* <TableHead className="text-center text-[#26890d] font-semibold w-[100px]">
                       Actions
-                    </TableHead>
+                    </TableHead> */}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -172,7 +232,7 @@ export function EmployeeReports({ searchQuery = "" , employees = [] }: EmployeeR
                             {report.flagged ? "Flagged" : "Unflagged"}
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-right">
+                        {/* <TableCell className="text-right">
                           <Button
                             variant="ghost"
                             size="sm"
@@ -181,7 +241,7 @@ export function EmployeeReports({ searchQuery = "" , employees = [] }: EmployeeR
                           >
                             <View size={14} className="mr-1" /> PDF
                           </Button>
-                        </TableCell>
+                        </TableCell> */}
                       </TableRow>
                     ))
                   ) : (
@@ -250,10 +310,10 @@ export function EmployeeReports({ searchQuery = "" , employees = [] }: EmployeeR
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleDownload(report.id)}
+                            onClick={() => handleDownload(report.report_link)}
                             className="px-2 text-[#26890d] border border-[#26890d]/30 hover:bg-[#2a2f1e] hover:text-[#26890d] hover:border-[#26890d]/30 hover:opacity-100"
                           >
-                            <Download size={14} className="mr-1" /> PDF
+                            <View size={14} className="mr-1" /> PDF
                           </Button>
                         </TableCell>
                       </TableRow>
@@ -324,10 +384,10 @@ export function EmployeeReports({ searchQuery = "" , employees = [] }: EmployeeR
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleDownload(report.id)}
+                            onClick={() => handleDownload(report.report_link)}
                             className="px-2 text-[#26890d] border border-[#26890d]/30 hover:bg-[#2a2f1e] hover:text-[#26890d] hover:border-[#26890d]/30 hover:opacity-100"
                           >
-                            <Download size={14} className="mr-1" /> PDF
+                            <View size={14} className="mr-1" /> PDF
                           </Button>
                         </TableCell>
                       </TableRow>

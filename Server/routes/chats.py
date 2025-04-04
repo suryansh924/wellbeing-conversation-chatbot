@@ -16,7 +16,7 @@ import io
 from fastapi.responses import StreamingResponse
 
 
-from database.models import Conversation,Message
+from database.models import Conversation,Message, Master
 
 
 load_dotenv()
@@ -200,6 +200,37 @@ def get_messages(conversation_id: int, db: Session = Depends(get_db)):  # Ensure
 
         return message_list
 
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+#Returns users whose reports are generated today
+@router.get("/todays_reports")
+def fetch_todays_conv(db: Session = Depends(get_db)):
+    try:
+        today = datetime.today().date()
+        # Get conversations with today's date and report not empty
+        conversations = db.query(Conversation).filter(
+            Conversation.date == today,
+            Conversation.report != ""
+        ).all()
+
+        combined_data = []
+        for conv in conversations:
+            employee = db.query(Master).filter(Master.employee_id == conv.employee_id).first()
+            if employee:
+                combined_data.append({
+                    "Employee_ID": employee.employee_id,
+                    "Employee_Name": employee.employee_name,
+                    "Employee_Email": employee.employee_email,
+                    "Employee_Role":employee.role,
+                    "Is_Selected":employee.is_selected,
+                    "Is_Flagged":employee.is_Flagged,
+                    "Report": conv.report,
+                    "Feature_Vector":employee.feature_vector,
+                    "Conversation_Completed":employee.conversation_completed,
+                    "Sentimental_Score":employee.sentimental_score,
+                    })
+        return combined_data
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
