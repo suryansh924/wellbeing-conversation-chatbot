@@ -1,12 +1,13 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, MessageSquare } from "lucide-react";
 import chatService, { ApiMessage } from "@/services/apiService";
+import Message from "@/components/Conversation/message";
 
 export default function ConversationPage() {
   const { id } = useParams();
@@ -15,24 +16,54 @@ export default function ConversationPage() {
   const [messages, setMessages] = useState<ApiMessage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     // Check if user is authenticated
+    let isMounted = true;
     async function checkProfile() {
       try {
+        const token = localStorage.getItem("access_token");
+        if (!token) {
+          router.push("/");
+          return;
+        }
+
         const profile = await fetchEmployeeProfile();
         if (!profile) {
           router.push("/");
-        } else {
+          return;
+        }
+
+        if (isMounted) {
           fetchConversationMessages();
         }
       } catch (error) {
         console.error("Error fetching profile", error);
-        router.push("/");
+        if (isMounted) {
+          router.push("/");
+        }
       }
     }
+
     checkProfile();
+
+    return () => {
+      isMounted = false;
+    };
   }, [id, router]);
+
+  // Scroll to bottom when messages change
+  useEffect(() => {
+    if (scrollAreaRef.current && messages.length > 0) {
+      const scrollableElement = scrollAreaRef.current.querySelector(
+        "[data-radix-scroll-area-viewport]"
+      );
+      if (scrollableElement) {
+        scrollableElement.scrollTop = scrollableElement.scrollHeight;
+      }
+    }
+  }, [messages]);
 
   const fetchConversationMessages = async () => {
     setIsLoading(true);
@@ -59,13 +90,17 @@ export default function ConversationPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground p-4 md:p-8">
-      <div className="max-w-5xl mx-auto">
-        <div className="flex items-center mb-8">
-          <Button variant="ghost" onClick={goBack} className="p-2 mr-4">
+    <div className="min-h-screen bg-background text-foreground p-4 md:p-6">
+      <div className="w-full mx-auto">
+        <div className="flex items-center mb-6">
+          <Button
+            variant="outline"
+            onClick={goBack}
+            className="p-2 mr-4 cursor-pointer hover:bg-foreground/10"
+          >
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <h1 className="text-2xl md:text-3xl font-bold text-gradient">
+          <h1 className="text-2xl md:text-3xl font-bold text-primary-light">
             Conversation Details
           </h1>
         </div>
@@ -75,7 +110,7 @@ export default function ConversationPage() {
             <MessageSquare className="stats-icon" />
             <div>
               <h3 className="text-foreground/80 text-sm font-medium">
-                Conversation ID
+                Conversation Date
               </h3>
               <p className="text-foreground text-xl font-semibold">{id}</p>
             </div>
@@ -87,7 +122,7 @@ export default function ConversationPage() {
             Messages
           </h2>
 
-          <ScrollArea className="h-[500px] pr-4">
+          <ScrollArea className="h-[600px] pr-4" ref={scrollAreaRef}>
             {isLoading ? (
               <div className="flex items-center justify-center h-40">
                 <p className="text-foreground/70">Loading messages...</p>
@@ -97,27 +132,15 @@ export default function ConversationPage() {
                 <p className="text-red-400">{error}</p>
               </div>
             ) : messages.length > 0 ? (
-              <div className="space-y-4">
+              <div className="space-y-6 p-2">
                 {messages.map((message) => (
-                  <div
+                  <Message
                     key={message.id}
-                    className={`p-4 rounded-lg ${
-                      message.sender_type === "chatbot"
-                        ? "bg-primary-dark/30 mr-auto max-w-[80%] md:max-w-[70%]"
-                        : "bg-secondary-dark/30 ml-auto max-w-[80%] md:max-w-[70%]"
-                    }`}
-                  >
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h3 className="font-medium text-foreground mb-1">
-                          {message.sender_type === "chatbot"
-                            ? "Deloitte Connect"
-                            : employeeData?.employee_name || "You"}
-                        </h3>
-                        <p className="text-foreground/90">{message.content}</p>
-                      </div>
-                    </div>
-                  </div>
+                    id={message.id.toString()}
+                    content={message.content}
+                    isUser={message.sender_type !== "chatbot"}
+                    timestamp={new Date(message.timestamp)}
+                  />
                 ))}
               </div>
             ) : (

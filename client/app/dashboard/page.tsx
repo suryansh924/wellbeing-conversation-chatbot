@@ -4,10 +4,11 @@ import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Calendar, MessageSquare, Clock } from "lucide-react";
+import { Calendar, MessageSquare, Clock, User } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { Hamburger, MobileMenu } from "@/components/ui/hamburger";
 import chatService, { ApiConversation } from "@/services/apiService";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 export interface Conversation {
   id: string;
@@ -33,25 +34,33 @@ export default function DashboardPage() {
   );
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
-    // Check if user is authenticated
-    async function checkProfile() {
+    const checkAuth = async () => {
+      // Check if token exists
+      const token = localStorage.getItem("access_token");
+      if (!token) {
+        router.push("/"); // Redirect to login page if no token
+        return;
+      }
+
       try {
+        // Verify token by loading the user profile
         const profile = await fetchEmployeeProfile();
-        if (!profile) {
-          router.push("/");
+        if (!profile || profile.role !== "employee") {
+          router.push("/"); // Redirect if invalid profile or wrong role
         } else {
-          // Fetch conversations for this employee
           fetchEmployeeConversations(profile.employee_id);
         }
       } catch (error) {
-        console.error("Error fetching profile", error);
-        router.push("/");
+        console.error("Authentication error:", error);
+        router.push("/"); // Redirect on any auth error
       }
-    }
-    checkProfile();
-  }, [router, employeeData]);
+    };
+
+    checkAuth();
+  }, [router]);
 
   const fetchEmployeeConversations = async (employeeId: string) => {
     setIsLoading(true);
@@ -115,12 +124,64 @@ export default function DashboardPage() {
     router.push(`/dashboard/conversation/${conversationId}`);
   };
 
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 10);
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
   return (
-    <div className="min-h-screen bg-background text-foreground p-4 md:p-8">
+    <div className="min-h-screen bg-background text-foreground">
+      {/* Fixed Header */}
+      <header
+        className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 ${
+          scrolled
+            ? "py-4 bg-background/80 backdrop-blur-md shadow-md"
+            : "py-4 bg-transparent"
+        }`}
+      >
+        <div className="container mx-auto px-4 md:px-6 flex items-center justify-between">
+          <div className="flex items-center">
+            <Avatar className="h-10 w-10 mr-3 border-2 border-primary/30">
+              <AvatarFallback className="bg-primary/20 text-foreground">
+                {employeeData?.employee_name?.charAt(0) || "U"}
+              </AvatarFallback>
+            </Avatar>
+            <div className="hidden sm:block">
+              <h2 className="font-medium text-foreground">
+                {employeeData?.employee_name || "Welcome"}
+              </h2>
+              <p className="text-xs text-foreground/70">
+                {employeeData?.employee_id || "Employee"}
+              </p>
+            </div>
+          </div>
+
+          {/* <div className="text-center flex-1 sm:flex-none">
+            <h1
+              className={`font-bold text-gradient transition-all duration-300 ${
+                scrolled ? "text-2xl" : "text-2xl md:text-3xl"
+              }`}
+            >
+              Employee Dashboard
+            </h1>
+          </div> */}
+
+          <div className="w-10 h-10">
+            {/* Placeholder to balance the header */}
+          </div>
+        </div>
+      </header>
+
+      {/* Hamburger button stays fixed regardless of scroll */}
       <Hamburger
         isOpen={isMenuOpen}
         onClick={() => setIsMenuOpen(!isMenuOpen)}
       />
+
       <MobileMenu
         isOpen={isMenuOpen}
         onClose={() => setIsMenuOpen(false)}
@@ -128,118 +189,120 @@ export default function DashboardPage() {
         logout={logout}
       />
 
-      <div className="max-w-5xl mx-auto">
-        <header className="text-center mb-12">
-          <h1 className="text-3xl md:text-4xl font-bold mb-4 text-gradient">
-            Employee Dashboard
-          </h1>
-          <div className="glass-card p-6 rounded-xl max-w-3xl mx-auto">
-            <h2 className="text-xl md:text-2xl font-semibold text-primary-light mb-2">
-              No Conversations Scheduled
+      {/* Main content with proper padding to account for fixed header */}
+      <main className="px-4 md:px-6 pb-6">
+        <div className="w-full mx-auto">
+          {/* Welcome Card (replaces original header) */}
+          <div className=" p-6 rounded-xl mx-auto mb-10">
+            <h2 className="text-xl md:text-2xl font-semibold text-primary-light mb-2 text-center">
+              Welcome Back, {employeeData?.employee_name || "Employee"}!
             </h2>
-            <p className="text-foreground/80">
-              You don't have any well-being check-ins scheduled at this time.
+            <p className="text-foreground/80 text-center">
+              We're glad to see you here. Explore your dashboard to stay updated
+              and connected.
             </p>
           </div>
-        </header>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-          <div className="stats-card">
-            <div className="flex items-center gap-4">
-              <Calendar className="stats-icon" />
-              <div>
-                <h3 className="text-foreground/80 text-sm font-medium">
-                  Next Check-in
-                </h3>
-                <p className="text-foreground text-xl font-semibold">
-                  Not scheduled yet
-                </p>
+          {/* Stats Cards - keep your existing code */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+            <div className="stats-card">
+              <div className="flex items-center gap-4">
+                <Calendar className="stats-icon" />
+                <div>
+                  <h3 className="text-foreground/80 text-sm font-medium">
+                    Next Check-in
+                  </h3>
+                  <p className="text-foreground text-xl font-semibold">
+                    Not scheduled yet
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="stats-card">
+              <div className="flex items-center gap-4">
+                <MessageSquare className="stats-icon" />
+                <div>
+                  <h3 className="text-foreground/80 text-sm font-medium">
+                    Total Conversations
+                  </h3>
+                  <p className="text-foreground text-xl font-semibold">
+                    {pastConversations.length}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="stats-card">
+              <div className="flex items-center gap-4">
+                <Clock className="stats-icon" />
+                <div>
+                  <h3 className="text-foreground/80 text-sm font-medium">
+                    Last Activity
+                  </h3>
+                  <p className="text-foreground text-xl font-semibold">
+                    {pastConversations.length > 0
+                      ? new Date(
+                          pastConversations[0].lastMessage.timestamp
+                        ).toLocaleDateString()
+                      : "No recent activity"}
+                  </p>
+                </div>
               </div>
             </div>
           </div>
 
-          <div className="stats-card">
-            <div className="flex items-center gap-4">
-              <MessageSquare className="stats-icon" />
-              <div>
-                <h3 className="text-foreground/80 text-sm font-medium">
-                  Total Conversations
-                </h3>
-                <p className="text-foreground text-xl font-semibold">
-                  {pastConversations.length}
-                </p>
-              </div>
-            </div>
-          </div>
+          {/* Past Conversations - keep your existing code */}
+          <div className="glass-card p-6 rounded-xl">
+            <h2 className="text-xl font-semibold text-primary-light mb-4">
+              Past Conversations
+            </h2>
+            <p className="text-foreground/80 mb-6">
+              Review your previous well-being check-ins
+            </p>
 
-          <div className="stats-card">
-            <div className="flex items-center gap-4">
-              <Clock className="stats-icon" />
-              <div>
-                <h3 className="text-foreground/80 text-sm font-medium">
-                  Last Activity
-                </h3>
-                <p className="text-foreground text-xl font-semibold">
-                  {pastConversations.length > 0
-                    ? new Date(
-                        pastConversations[0].lastMessage.timestamp
-                      ).toLocaleDateString()
-                    : "No recent activity"}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="glass-card p-6 rounded-xl">
-          <h2 className="text-xl font-semibold text-primary-light mb-4">
-            Past Conversations
-          </h2>
-          <p className="text-foreground/80 mb-6">
-            Review your previous well-being check-ins
-          </p>
-
-          <ScrollArea className="h-[400px] pr-4">
-            {isLoading ? (
-              <div className="flex items-center justify-center h-40">
-                <p className="text-foreground/70">Loading conversations...</p>
-              </div>
-            ) : pastConversations.length > 0 ? (
-              <div className="space-y-4">
-                {pastConversations.map((conversation) => (
-                  <div
-                    key={conversation.id}
-                    className="p-4 hover:bg-primary-dark/50 rounded-lg transition-colors ease-in-out duration-100 cursor-pointer border border-border/30"
-                    onClick={() => handleConversationClick(conversation.id)}
-                  >
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h3 className="font-medium text-foreground">
-                          {conversation.name}
-                        </h3>
-                        <p className="text-sm text-foreground/70 mt-1 line-clamp-1">
-                          {conversation.lastMessage.content}
-                        </p>
+            <ScrollArea className="h-[350px] pr-4">
+              {isLoading ? (
+                <div className="flex items-center justify-center h-40">
+                  <p className="text-foreground/80">Loading conversations...</p>
+                </div>
+              ) : pastConversations.length > 0 ? (
+                <div className="space-y-4">
+                  {pastConversations.map((conversation) => (
+                    <div
+                      key={conversation.id}
+                      className="stats-card p-4 hover:bg-primary-dark/50 rounded-lg transition-colors ease-in-out duration-200 cursor-pointer border border-border/30"
+                      onClick={() => handleConversationClick(conversation.id)}
+                    >
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h3 className="font-medium text-foreground">
+                            {conversation.name}
+                          </h3>
+                          <p className="text-sm text-foreground/70 mt-1 line-clamp-1">
+                            {conversation.lastMessage.content}
+                          </p>
+                        </div>
+                        <span className="text-xs text-foreground/50">
+                          {new Date(
+                            conversation.lastMessage.timestamp
+                          ).toLocaleDateString()}
+                        </span>
                       </div>
-                      <span className="text-xs text-foreground/50">
-                        {new Date(
-                          conversation.lastMessage.timestamp
-                        ).toLocaleDateString()}
-                      </span>
                     </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="flex items-center justify-center h-40">
-                <p className="text-foreground/70">
-                  No past conversations found
-                </p>
-              </div>
-            )}
-          </ScrollArea>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex items-center justify-center h-40">
+                  <p className="text-foreground/70">
+                    No past conversations found
+                  </p>
+                </div>
+              )}
+            </ScrollArea>
+          </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 }

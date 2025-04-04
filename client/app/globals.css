@@ -59,7 +59,7 @@
   }
 
   /* Buttons */
-  .btn-primary {
+  btn-primary {
     @apply px-6 py-3 rounded-lg font-medium;
     background: var(--gradient-primary);
     color: var(--color-background);
@@ -70,6 +70,65 @@
       box-shadow: 0 4px 15px rgba(0, 154, 68, 0.3);
     }
   }
+  
+  /* Navigation Buttons - Flattened Structure */
+  .nav-btn {
+    @apply flex items-center justify-center gap-2 px-4 py-2 rounded-md font-medium transition-colors duration-150;
+    @apply border border-primary/20 text-foreground hover:border-primary/40;
+    @apply focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/30;
+  }
+  
+  .nav-btn-primary {
+    @apply flex items-center justify-center gap-2 px-4 py-2 rounded-md font-medium transition-colors duration-150;
+    @apply border border-primary/20 bg-primary/80 text-black hover:bg-primary;
+    @apply focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/60;
+  }
+  
+  .nav-btn-secondary {
+    @apply flex items-center justify-center gap-2 px-4 py-2 rounded-md font-medium transition-colors duration-150;
+    @apply border border-primary/20 bg-surface/80 text-foreground hover:bg-surface;
+    @apply focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/30;
+  }
+  
+  .nav-btn-outline {
+    @apply flex items-center justify-center gap-2 px-4 py-2 rounded-md font-medium transition-colors duration-150;
+    @apply border border-primary/30 bg-transparent text-foreground hover:bg-primary/5;
+    @apply focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/30;
+  }
+  
+  .nav-btn-ghost {
+    @apply flex items-center justify-center gap-2 px-4 py-2 rounded-md font-medium transition-colors duration-150;
+    @apply border-transparent bg-transparent text-foreground hover:bg-surface/40;
+    @apply focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/20;
+  }
+  
+  .nav-btn-danger {
+    @apply flex items-center justify-center gap-2 px-4 py-2 rounded-md font-medium transition-colors duration-150;
+    @apply border border-red-500/20 bg-red-500/10 text-red-400 hover:bg-red-500/20;
+    @apply focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-red-500/30;
+  }
+  
+  /* Button Size Modifiers */
+  .nav-btn-icon {
+    @apply p-2 h-9 w-9;
+  }
+  
+  .nav-btn-sm {
+    @apply text-sm px-3 py-1 rounded;
+  }
+  
+  .nav-btn-lg {
+    @apply text-base px-5 py-2.5;
+  }
+
+  /* Special Buttons */
+  .back-btn {
+    @apply flex items-center justify-center p-2 h-9 w-9 rounded-md;
+    @apply border border-primary/20 text-foreground bg-transparent;
+    @apply hover:bg-surface/40 hover:border-primary/30;
+    @apply focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/30;
+  }
+  
 
   /* HR Specific */
   .hr-panel {
@@ -243,6 +302,15 @@
     background: rgba(var(--color-primary), 0.1);
     -webkit-backdrop-filter: blur(10px);
     backdrop-filter: blur(10px);
+  }
+
+  .backdrop-blur-md {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+  
+  .shadow-md {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   }
 
   /* HR Specific */

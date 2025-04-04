@@ -20,7 +20,7 @@ interface MobileMenuProps {
 export const Hamburger: React.FC<HamburgerProps> = ({ isOpen, onClick }) => {
   return (
     <button
-      className="hamburger-button fixed z-50 top-6 right-6 w-10 h-10 flex flex-col justify-center items-center"
+      className="hamburger-button fixed z-50 top-4 right-6 w-10 h-10 flex flex-col justify-center items-center cursor-pointer"
       onClick={onClick}
       aria-label={isOpen ? "Close menu" : "Open menu"}
     >
@@ -77,11 +77,13 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({
   return (
     <div
       ref={menuRef}
-      className={`fixed inset-y-0 left-0 w-72 bg-card border-r border-border/30 shadow-lg z-40 transition-all duration-300 ease-in-out ${
-        isOpen ? "translate-x-0" : "-translate-x-full"
+      className={`fixed inset-y-0 right-0 w-72 bg-background border-l border-border/30 shadow-lg z-40 transition-all duration-300 ease-in-out ${
+        isOpen ? "translate-x-0" : "translate-x-full"
       }`}
     >
-      <div className="h-full flex flex-col p-6">
+      <div className="h-full flex flex-col p-6 pt-20">
+        {" "}
+        {/* Added pt-20 for hamburger space */}
         {/* Profile Section */}
         <div className="flex items-center gap-4 pb-6 border-b border-border">
           <Avatar className="h-14 w-14 bg-foreground/40 backdrop-blur-lg">
@@ -99,7 +101,6 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({
             </p>
           </div>
         </div>
-
         {/* Menu Buttons */}
         <nav className="flex-1 flex flex-col gap-2 py-8">
           <Button
@@ -108,22 +109,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({
           >
             Contact Us
           </Button>
-
-          <Button
-            variant="ghost"
-            className="w-full justify-start py-4 text-foreground hover:bg-primary/50"
-          >
-            Settings
-          </Button>
-
-          <Button
-            variant="ghost"
-            className="w-full justify-start py-4 text-foreground hover:bg-primary/50"
-          >
-            Help Center
-          </Button>
         </nav>
-
         {/* Logout Button */}
         <div className="mt-auto pt-4 border-t border-border/30">
           <Button

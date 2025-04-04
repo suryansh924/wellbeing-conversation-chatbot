@@ -17,6 +17,7 @@ export interface ApiMessage {
   id: number;
   content: string;
   sender_type: "employee" | "chatbot";
+  timestamp: string;
 }
 
 const api = axios.create({
