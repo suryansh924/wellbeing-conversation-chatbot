@@ -8,8 +8,11 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Mic, MicOff, Send, Volume2, VolumeX } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import axios from "axios";
-import { useAuth } from "@/context/AuthContext"; // Assuming you have an AuthContext
+import { useAuth } from "@/context/AuthContext"; 
 import Message from "@/components/Conversation/message";
+import { server } from "@/utils";
+import { set } from "zod";
+import { toast } from "sonner"; // Import toast from sonner instead
 
 interface Message {
   id: string;
@@ -25,8 +28,8 @@ interface TypingIndicator {
 export default function ConversationPage() {
   const server = "http://127.0.0.1:8000";
 
-  const TotalQuestions = 6
-  
+  const TotalQuestions = 6;
+
   const { employeeData ,check_role} = useAuth();
   const router = useRouter();
   const [employee_name, setEmployee_Name] = useState("");
@@ -110,19 +113,27 @@ export default function ConversationPage() {
             };
           }
         );
-        console.log("questions Asked:", questionsAsked-1);
-        setMaxQuestions(TotalQuestions-questionsAsked-1);
-        console.log(maxQuestions)
+        console.log("questions Asked:", questionsAsked - 1);
+        setMaxQuestions(TotalQuestions - questionsAsked - 1);
+        console.log(maxQuestions);
         setMessages(formattedMessages);
-        setConversationId(lastConversation.id)
+        setConversationId(lastConversation.id);
+        toast.success("Conversation Resumed", {
+          description: "Your previous conversation has been loaded successfully"
+        });
         return true;
       } else return false;
     } catch (error) {
       console.error("Error fetching conversations:", error);
+      toast.error("Error", {
+        description: "Failed to check for incomplete conversations"
+      });
+      return false;
     }
-  }
+  };
+
   const startConv = async () => {
-    console.log("Starting Conversation")
+    console.log("Starting Conversation");
     try {
       const response = await axios.post(
         `${server}/api/conversation/start`,
@@ -138,7 +149,7 @@ export default function ConversationPage() {
         }
       );
       const data = response.data;
-      console.log("On Conv Page",data);
+      console.log("On Conv Page", data);
 
       setConversationId(data.conversation_id);
       setSelectedQuestions(data.selected_questions);
@@ -151,22 +162,25 @@ export default function ConversationPage() {
           timestamp: new Date(),
         },
       ]);
+      return;
     } catch (error) {
       console.error("Error starting conversation:", error);
+      toast.error("Error", {
+        description: "Failed to start the conversation. Please try again."
+      });
     }
-  }
+  };
 
   const handleCheckForIncompleteConv = async () => {
-    const res = await checkForIncompleteConv();  // Wait for the promise to resolve
-    console.log("CheckIncompleteConv: ", res);  // Log the result of checkForIncompleteConv
-  
+    const res = await checkForIncompleteConv(); // Wait for the promise to resolve
+    console.log("CheckIncompleteConv: ", res); // Log the result of checkForIncompleteConv
+
     if (!res) {
-      startConv();  // Only call startConv if res is falsy (or whatever condition you have)
+      startConv(); // Only call startConv if res is falsy (or whatever condition you have)
     }
   };
 
   useEffect(() => {
-
     if (employeeData) {
       console.log("Setting employee data from auth context:", employeeData);
       setEmployee_Id(employeeData.employee_id);
@@ -217,12 +231,16 @@ export default function ConversationPage() {
         .query({ name: "microphone" as PermissionName })
         .then((permissionStatus) => {
           setMicPermission(
-            permissionStatus.state === "prompt" ? "pending" : (permissionStatus.state as "granted" | "denied")
+            permissionStatus.state === "prompt"
+              ? "pending"
+              : (permissionStatus.state as "granted" | "denied")
           );
 
           permissionStatus.onchange = () => {
             setMicPermission(
-              permissionStatus.state === "prompt" ? "pending" : (permissionStatus.state as "granted" | "denied")
+              permissionStatus.state === "prompt"
+                ? "pending"
+                : (permissionStatus.state as "granted" | "denied")
             );
           };
         })
@@ -236,49 +254,63 @@ export default function ConversationPage() {
   }, []);
 
   const provideInsights = async () => {
-    const response = await axios.get(
-      `${server}/api/conversation/insights/${conversationId}`,
-      {
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }
-    );
-    const data = await response.data;
-    console.log(data);
-    const botMessage: Message = {
-      id: `bot-${Date.now()}`,
-      content: data.insights,
-      isUser: false,
-      timestamp: new Date(),
-    };
+    try {
+      const response = await axios.get(
+        `${server}/api/conversation/insights/${conversationId}`,
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      const data = await response.data;
+      console.log(data);
+      const botMessage: Message = {
+        id: `bot-${Date.now()}`,
+        content: data.insights,
+        isUser: false,
+        timestamp: new Date(),
+      };
 
-    setMessages((prev) => [...prev, botMessage]);
+      setMessages((prev) => [...prev, botMessage]);
+    } catch (error) {
+      console.error("Error providing insights:", error);
+      toast.error("Error", {
+        description: "Failed to generate insights. Please try again later."
+      });
+    }
   };
 
   const generateReport = async () => {
-    const shapValues: { [key: string]: number } = {};
-    shap.forEach((key) => {
-      shapValues[key] = 0.01;
-    });
+    try {
+      const shapValues: { [key: string]: number } = {};
+      shap.forEach((key) => {
+        shapValues[key] = 0.01;
+      });
 
-    console.log(shapValues);
+      console.log(shapValues);
 
-    const response = await axios.post(
-      `${server}/api/report/employee`,
-      {
-        conversation_id: conversationId,
-        employee_id: employee_id,
-        shap_values: shapValues,
-      },
-      {
-        headers: {
-          "Content-Type": "application/json",
+      const response = await axios.post(
+        `${server}/api/report/employee`,
+        {
+          conversation_id: conversationId,
+          employee_id: employee_id,
+          shap_values: shapValues,
         },
-      }
-    );
-    const data = await response.data;
-    console.log(data);
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      const data = await response.data;
+      console.log(data);
+    } catch (error) {
+      console.error("Error generating report:", error);
+      toast.error("Error", {
+        description: "Failed to generate your wellbeing report. Please try again later."
+      });
+    }
   };
 
   const handleSendMessage = async () => {
@@ -303,10 +335,10 @@ export default function ConversationPage() {
         "Thank you for your time! The conversation is now over. Here are few insights for your improvement...";
       if (maxQuestions != 0) {
         try {
-          console.log("Posting message for Employee:")
-          console.log("employee_name:",employee_name)
-          console.log("employee_name:",employee_id);
-          console.log("Conversation_id:",conversationId);
+          console.log("Posting message for Employee:");
+          console.log("employee_name:", employee_name);
+          console.log("employee_name:", employee_id);
+          console.log("Conversation_id:", conversationId);
 
           const response = await axios.post(
             `${server}/api/conversation/message`,
@@ -330,14 +362,17 @@ export default function ConversationPage() {
           chatbot_response = data.chatbot_response;
 
           setMaxQuestions(maxQuestions - 1);
-          console.log(maxQuestions);      
+          console.log(maxQuestions);
         } catch (error) {
           console.error("Error sending message:", error);
           chatbot_response =
             "I'm having trouble connecting right now. Please try again later.";
+          toast.error("Connection Error", {
+            description: "Failed to send your message. Please check your connection and try again."
+          });
         }
-      }else{
-        setHasEnded(true)
+      } else {
+        setHasEnded(true);
       }
 
       setTimeout(() => {
@@ -408,8 +443,7 @@ export default function ConversationPage() {
       };
       mediaRecorderRef.current.stop();
       console.log("Recording stopped");
-
-    };
+    }
   };
 
   const processAudio = async (audioBlob: Blob) => {
@@ -419,8 +453,6 @@ export default function ConversationPage() {
       // Convert speech to text
       const formData = new FormData();
       formData.append("audio", audioBlob);
-      // console.log("Form Data:", formData);
-      // console.log("audio url", URL.createObjectURL(audioBlob));
 
       const transcriptionResponse = await axios.post(
         `${server}/api/conversation/transcribe`,
@@ -432,9 +464,13 @@ export default function ConversationPage() {
       console.log("Transcribed text", transcribedText);
 
       setInputValue(transcribedText);
+      // Removed success toast notification for audio transcription
+      // The user will see the transcribed text appear in the input field, which is enough feedback
     } catch (error) {
       console.error("Error processing audio:", error);
-      alert("Error processing your voice. Please try again.");
+      toast.error("Transcription Error", {
+        description: "Failed to transcribe your voice. Please try typing instead."
+      });
     } finally {
       setIsAudioProcessing(false);
       setIsLoading(false);
@@ -550,7 +586,7 @@ export default function ConversationPage() {
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={handleKeyDown}
-              disabled={isLoading || hasEnded}
+              disabled={isLoading || hasEnded || isRecording}
             />
           </div>
           {/* Microphone button with improved states */}
@@ -559,22 +595,24 @@ export default function ConversationPage() {
             size="icon"
             onClick={isRecording ? stopRecording : startRecording}
             style={{
-              backgroundColor: isRecording ? "#86BC25" : "",
-              color: isRecording ? "black" : "",
+              backgroundColor: isRecording || isAudioProcessing ? "#86BC25" : "",
+              color: isRecording || isAudioProcessing ? "black" : "",
               opacity: micPermission === "denied" ? 0.5 : 1,
               cursor: micPermission === "denied" ? "not-allowed" : "pointer",
             }}
-            disabled={micPermission === "denied"}
+            disabled={micPermission === "denied" || isAudioProcessing}
             className="relative overflow-hidden"
             title={
               micPermission === "denied"
                 ? "Microphone access denied"
                 : isRecording
-                  ? "Stop recording"
-                  : "Start recording"
+                ? "Stop recording"
+                : isAudioProcessing
+                ? "Processing audio..."
+                : "Start recording"
             }
           >
-            {/* onClick={isRecording ? stopRecording : startRecording}
+{/* onClick={isRecording ? stopRecording : startRecording}
             className={`${
               isRecording ? "bg-destructive text-destructive-foreground" : ""
             }`}
@@ -616,6 +654,10 @@ export default function ConversationPage() {
                     }}
                   ></div>
                 </div>
+              </div>
+            ) : isAudioProcessing ? (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="h-5 w-5 border-2 border-t-transparent border-black rounded-full animate-spin"></div>
               </div>
             ) : (
               <Mic className="h-5 w-5" />

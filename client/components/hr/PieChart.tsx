@@ -197,6 +197,12 @@ export function HRPieChart({ flaggedCount, unflaggedCount }: HRPieChartProps) {
                   border: "none",
                   color: "#f0f0f0",
                 }}
+                labelStyle={{
+                  color: "#ffffff"
+                }}
+                itemStyle={{
+                  color: "#ffffff"
+                }}
               />
               <Legend
                 layout="horizontal"
