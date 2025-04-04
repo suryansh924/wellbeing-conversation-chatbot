@@ -50,10 +50,6 @@ const hrDashboard: React.FC = () => {
         }
       } catch (error) {
         console.error("Authentication error:", error);
-        // Clear invalid credentials
-        localStorage.removeItem("access_token");
-        localStorage.removeItem("user_role");
-        router.push("/");
       } finally {
         setLoading(false);
       }

@@ -88,7 +88,7 @@ def login(user: LoginUser, db: Session = Depends(get_db)):
     db_user = db.query(Master).filter(Master.employee_email == user.email).first()
     if not db_user:
         raise HTTPException(status_code=400, detail="User does not exist")
-    token= create_access_token(data={"emp_id": db_user.employee_id})
+    token= create_access_token(data={"emp_id": db_user.employee_id , "role":"employee"})
     return {"token": token, "role": db_user.role}
 
 
@@ -98,7 +98,7 @@ def oauth(user: OAuthUser, db: Session = Depends(get_db)):
         db_user = db.query(Master).filter(Master.employee_email == user.email).first()
         if not db_user:
             raise HTTPException(status_code=400, detail="User does not exist")
-        token= create_access_token(data={"emp_id": db_user.employee_id})
+        token= create_access_token(data={"emp_id": db_user.employee_id,"role":"employee"})
         return {"token": token, "role": db_user.role}
     else:
         existing_employee = db.query(Master).filter(Master.employee_id == user.emp_id).first()
@@ -176,7 +176,7 @@ def register(user: RegisterUser, db: Session = Depends(get_db)):
     existing_employee.employee_email = user.email
     db.commit()
     db.refresh(existing_employee)
-    access_token = create_access_token(data={"emp_id": user.emp_id})
+    access_token = create_access_token(data={"emp_id": user.emp_id,"role":"employee"})
     return {"token": access_token}
 
 def verify_user(token: str,db: Session = Depends(get_db)) -> str:
@@ -186,14 +186,12 @@ def verify_user(token: str,db: Session = Depends(get_db)) -> str:
     try:
         decoded_claims = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         emp_id = decoded_claims.get("emp_id")
-        hr_id = decoded_claims.get("hr_email")
-        if emp_id:
-            return {"user_type": "employee", "user_id": emp_id}
+        role=decoded_claims.get("role")
+        if role=="employee" :
+            employee = db.query(Master).filter(Master.employee_id == employee_id).first()
         
-        if hr_id:
-            return {"user_type": "hr", "user_id": hr_id}
-        
-        raise HTTPException(status_code=401, detail="Invalid token")
+        if employee.role.lower() != "employee":
+           raise HTTPException(status_code=401, detail="Invalid token")
         
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Token has expired")
