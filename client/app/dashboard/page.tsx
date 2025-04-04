@@ -27,7 +27,7 @@ export interface Conversation {
 export default function DashboardPage() {
   const router = useRouter();
   const menuRef = useRef<HTMLDivElement>(null);
-  const { fetchEmployeeProfile, logout, employeeData } = useAuth();
+  const { fetchEmployeeProfile, logout, employeeData , check_role } = useAuth();
   const [pastConversations, setPastConversations] = useState<Conversation[]>(
     []
   );
@@ -35,23 +35,16 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check if user is authenticated
-    async function checkProfile() {
-      try {
-        const profile = await fetchEmployeeProfile();
-        if (!profile) {
-          router.push("/");
-        } else {
-          // Fetch conversations for this employee
-          fetchEmployeeConversations(profile.employee_id);
-        }
-      } catch (error) {
-        console.error("Error fetching profile", error);
+    try {
+      if (!check_role("employee")) {
+        localStorage.removeItem('access_token');
         router.push("/");
+        return;
       }
+    } catch (error) {
+      console.log(error)
     }
-    checkProfile();
-  }, [router, employeeData]);
+}, []);
 
   const fetchEmployeeConversations = async (employeeId: string) => {
     setIsLoading(true);

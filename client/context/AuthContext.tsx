@@ -57,6 +57,7 @@ interface AuthContextType {
   setSignInModalVisible: (visible: boolean) => void;
   fetchEmployeeProfile: () => Promise<Employee>;
   fetchHRProfile: () => Promise<HRUser>;
+  check_role: (role: string) => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -77,22 +78,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           typeof window !== "undefined" && localStorage.getItem("access_token");
         if (token) {
           setIsLogged(true);
-          const userRole = localStorage.getItem("user_role");
-          if (userRole === "admin") {
+          const decoded = JSON.parse(atob(token.split('.')[1])); 
+          console.log("Fetching HR Profile Based on role :",decoded.role)
+          if (decoded.role === "hr") {
             await fetchHRProfile();
-          } else if (userRole === "employee") {
+          } else if (decoded.role === "employee") {
             await fetchEmployeeProfile();
           }
         }
       } catch (error) {
         console.error("Error fetching user profile:", error);
       } finally {
-        setLoading(false); // Ensure loading state is updated
+        setLoading(false);
       }
     };
     fetchData();
   }, []);
 
+  const check_role = (role:string) => {
+    const token = localStorage.getItem('access_token');
+    if (!token) return false;
+    try {
+      const decoded = JSON.parse(atob(token.split('.')[1])); 
+      if (decoded.role === role ) {
+        return true; 
+      }
+      return false;
+    } catch (error) {
+      console.error("Invalid token:", error);
+      return false; 
+    }
+  }
+  
   const signIn = async (email: string, password: string) => {
     const userCredential = await signInWithEmailAndPassword(
       auth,
@@ -232,6 +249,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         fetchEmployeeProfile,
         fetchHRProfile,
         setHRData,
+        check_role,
       }}
     >
       {!loading ? children : <p>Loading...</p>}
