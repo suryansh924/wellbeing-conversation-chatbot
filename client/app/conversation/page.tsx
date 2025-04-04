@@ -76,7 +76,11 @@ export default function ConversationPage() {
 
   const checkForIncompleteConv = async () => {
     try {
-      console.log("employee id is:", employeeData.employee_id)
+      if (employeeData) {
+        console.log("employee id is:", employeeData.employee_id);
+      } else {
+        console.log("employeeData is null");
+      }
       const response = await axios.get(
         `http://127.0.0.1:8000/api/conversation/history/employee/${employeeData.employee_id}`
       );
@@ -177,6 +181,9 @@ export default function ConversationPage() {
   //   handleCheckForIncompleteConv();
   // }, [employeeData]);
 
+          // setConversationId(data.conversation_id);
+          
+          // setSelectedQuestions(data.selected_questions);
 
 
   useEffect(() => {
