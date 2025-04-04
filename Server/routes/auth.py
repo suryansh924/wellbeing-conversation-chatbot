@@ -115,7 +115,7 @@ def login(user: LoginUser, db: Session = Depends(get_db)):
     db_user = db.query(Master).filter(Master.employee_email == user.email).first()
     if not db_user:
         raise HTTPException(status_code=400, detail="User does not exist")
-    token= create_access_token(data={"emp_id": db_user.employee_id})
+    token= create_access_token(data={"emp_id": db_user.employee_id , "role":"employee"})
     return {"token": token, "role": db_user.role}
 
 
@@ -125,7 +125,7 @@ def oauth(user: OAuthUser, db: Session = Depends(get_db)):
         db_user = db.query(Master).filter(Master.employee_email == user.email).first()
         if not db_user:
             raise HTTPException(status_code=400, detail="User does not exist")
-        token= create_access_token(data={"emp_id": db_user.employee_id})
+        token= create_access_token(data={"emp_id": db_user.employee_id,"role":"employee"})
         return {"token": token, "role": db_user.role}
     else:
         existing_employee = db.query(Master).filter(Master.employee_id == user.emp_id).first()
@@ -149,8 +149,6 @@ def oauth(user: OAuthUser, db: Session = Depends(get_db)):
                 detail="This email is already registered with another employee."
             )
         
-
-
         # Update the existing record with name and email
         existing_employee.employee_name = user.name
         existing_employee.employee_email = user.email
@@ -158,8 +156,6 @@ def oauth(user: OAuthUser, db: Session = Depends(get_db)):
         db.refresh(existing_employee)
         access_token = create_access_token(data={"emp_id": user.emp_id})
         return {"token": access_token}
-
-    
 
 @router.get("/check/{employee_id}", response_model=EmployeeCheckResponse)
 def check_employee_id(employee_id: str, db: Session = Depends(get_db)):
@@ -203,10 +199,8 @@ def register(user: RegisterUser, db: Session = Depends(get_db)):
     existing_employee.employee_email = user.email
     db.commit()
     db.refresh(existing_employee)
-    access_token = create_access_token(data={"emp_id": user.emp_id})
+    access_token = create_access_token(data={"emp_id": user.emp_id,"role":"employee"})
     return {"token": access_token}
-
-
 
 
 @router.get("/employee")
@@ -215,19 +209,16 @@ def get_employee(authorization: str = Header(..., convert_underscores=False), db
     Fetches the employee details using the token.
     """
     try:
-        token = authorization.split(" ")[1]  # Extract token from "Bearer <token>"
+        token = authorization.split(" ")[1] 
+        user_data = verify_user(token, db)  
+        emp_id = user_data["emp_id"]
+        user = db.query(Master).filter(Master.employee_id == emp_id).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        return user 
     except IndexError:
         raise HTTPException(status_code=401, detail="Invalid Authorization header format")
 
-    user_data = verify_user(token)  
-    user_id = user_data["user_id"]  # Extract only the user_id
-
-    # Fetch user from the database
-    user = db.query(Master).filter(Master.employee_id == user_id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    return user
 
 @router.post("/hr-login")
 def hr_login(request: HRLoginRequest, db: Session = Depends(get_db)):
@@ -237,19 +228,42 @@ def hr_login(request: HRLoginRequest, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Invalid email or password")
 
     # Create the JWT token for the authenticated HR user
-    token = create_access_token(data={"hr_email": hr_user.email})
+    token = create_access_token(data={"hr_email": hr_user.email,"role":"hr" })
 
-    return {"token": token, "role": hr_user.role}
+    return {"token": token, "role": "hr"}
 
+
+def verify_hr(token: str, db: Session = Depends(get_db)) -> dict:
+    """
+    Verifies the JWT and returns the decoded claims.
+    """
+    try:
+
+        decoded_claims = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+
+        hr_email = decoded_claims.get("hr_email")
+        role = decoded_claims.get("role")
+
+        if not hr_email or not role:
+            raise HTTPException(status_code=401, detail="Invalid token payload")
+
+        return {"hr_email": hr_email, "role": role}
+
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token has expired")
+    except jwt.JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
 
 @router.get("/hr")
 def get_hr(authorization: str = Header(...), db: Session = Depends(get_db)):
-    token = authorization.split(" ")[1]
-    
-    hr_id = verify_user(token)["user_id"]
-    
-    # Fetch user from the database
-    hr = db.query(HRUser).filter(HRUser.email == hr_id).first()
-    if not hr:
-        raise HTTPException(status_code=404, detail="User not found")
-    return hr
+    try:
+        token = authorization.split(" ")[1]
+        print(token)
+        hr_email = verify_hr(token)["hr_email"]
+        hr = db.query(HRUser).filter(HRUser.email == hr_email).first()
+        if not hr:
+            raise HTTPException(status_code=404, detail="User not found")
+        return hr
+    except IndexError:
+        raise HTTPException(status_code=401, detail="Invalid Authorization header format")
+        

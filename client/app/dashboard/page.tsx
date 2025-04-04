@@ -7,6 +7,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Calendar, MessageSquare, Clock } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { Hamburger, MobileMenu } from "@/components/ui/hamburger";
+import chatService, { ApiConversation } from "@/services/apiService";
 
 export interface Conversation {
   id: string;
@@ -26,119 +27,86 @@ export interface Conversation {
 export default function DashboardPage() {
   const router = useRouter();
   const menuRef = useRef<HTMLDivElement>(null);
-  const { fetchEmployeeProfile, logout, employeeData } = useAuth();
+  const { fetchEmployeeProfile, logout, employeeData , check_role } = useAuth();
   const [pastConversations, setPastConversations] = useState<Conversation[]>(
     []
   );
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check if user is authenticated
-    async function checkProfile() {
-      try {
-        const profile = await fetchEmployeeProfile();
-        if (!profile) {
-          router.push("/");
-        }
-      } catch (error) {
-        console.error("Error fetching profile", error);
+    try {
+      if (!check_role("employee")) {
+        localStorage.removeItem('access_token');
         router.push("/");
+        return;
       }
+    } catch (error) {
+      console.log(error)
     }
-    checkProfile();
+}, []);
 
-    // Simulate fetching past conversations.
-    setTimeout(() => {
-      const mockConversations: Conversation[] = [
-        {
-          id: "conv1",
-          name: "Well-being Check-in",
-          participants: [
-            { id: "user1", name: "You", avatar: "", status: "online" },
-            {
-              id: "bot1",
-              name: "Deloitte Connect",
-              avatar: "/favicon.ico",
-              status: "online",
-            },
-          ],
-          lastMessage: {
-            id: "msg1",
-            content:
-              "Thank you for sharing your thoughts. I've noted your feedback.",
-            timestamp: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-            sender: {
-              id: "bot1",
-              name: "Deloitte Connect",
-              avatar: "/favicon.ico",
-              status: "online",
-            },
-            status: "read",
-          },
-          isGroup: false,
-          unreadCount: 0,
-        },
-        {
-          id: "conv2",
-          name: "Quarterly Review Preparation",
-          participants: [
-            { id: "user1", name: "You", avatar: "", status: "online" },
-            {
-              id: "bot1",
-              name: "Deloitte Connect",
-              avatar: "/favicon.ico",
-              status: "online",
-            },
-          ],
-          lastMessage: {
-            id: "msg2",
-            content:
-              "I've shared some resources to help you prepare for your upcoming review.",
-            timestamp: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000),
-            sender: {
-              id: "bot1",
-              name: "Deloitte Connect",
-              avatar: "/favicon.ico",
-              status: "online",
-            },
-            status: "read",
-          },
-          isGroup: false,
-          unreadCount: 0,
-        },
-        {
-          id: "conv3",
-          name: "Stress Management Session",
-          participants: [
-            { id: "user1", name: "You", avatar: "", status: "online" },
-            {
-              id: "bot1",
-              name: "Deloitte Connect",
-              avatar: "/favicon.ico",
-              status: "online",
-            },
-          ],
-          lastMessage: {
-            id: "msg3",
-            content:
-              "Remember to practice the breathing techniques we discussed.",
-            timestamp: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-            sender: {
-              id: "bot1",
-              name: "Deloitte Connect",
-              avatar: "/favicon.ico",
-              status: "online",
-            },
-            status: "read",
-          },
-          isGroup: false,
-          unreadCount: 0,
-        },
-      ];
+  const fetchEmployeeConversations = async (employeeId: string) => {
+    setIsLoading(true);
+    try {
+      const response = await chatService.getEmployeeConversations(employeeId);
 
-      setPastConversations(mockConversations);
-    }, 1000);
-  }, [router, employeeData]);
+      if (
+        response &&
+        response.conversations &&
+        response.conversations.length > 0
+      ) {
+        // Transform API data to match our Conversation interface
+        const formattedConversations: Conversation[] =
+          response.conversations.map((conv: ApiConversation) => ({
+            id: conv.id.toString(),
+            name: `Conversation on ${new Date(conv.date).toLocaleDateString()}`,
+            participants: [
+              {
+                id: conv.employee_id,
+                name: conv.employee_name,
+                avatar: "",
+                status: "online",
+              },
+              {
+                id: "bot1",
+                name: "Deloitte Connect",
+                avatar: "/favicon.ico",
+                status: "online",
+              },
+            ],
+            lastMessage: {
+              id: "msg1",
+              content: "View this conversation...",
+              timestamp: new Date(`${conv.date}T${conv.time}`),
+              sender: {
+                id: "bot1",
+                name: "Deloitte Connect",
+                avatar: "/favicon.ico",
+                status: "online",
+              },
+              status: "read",
+            },
+            isGroup: false,
+            unreadCount: 0,
+          }));
+
+        setPastConversations(formattedConversations);
+      } else {
+        // If no conversations returned, set empty array
+        setPastConversations([]);
+      }
+    } catch (error) {
+      console.error("Error fetching conversations:", error);
+      setPastConversations([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleConversationClick = (conversationId: string) => {
+    router.push(`/dashboard/conversation/${conversationId}`);
+  };
 
   return (
     <div className="min-h-screen bg-background text-foreground p-4 md:p-8">
@@ -225,12 +193,17 @@ export default function DashboardPage() {
           </p>
 
           <ScrollArea className="h-[400px] pr-4">
-            {pastConversations.length > 0 ? (
+            {isLoading ? (
+              <div className="flex items-center justify-center h-40">
+                <p className="text-foreground/70">Loading conversations...</p>
+              </div>
+            ) : pastConversations.length > 0 ? (
               <div className="space-y-4">
                 {pastConversations.map((conversation) => (
                   <div
                     key={conversation.id}
                     className="p-4 hover:bg-primary-dark/50 rounded-lg transition-colors ease-in-out duration-100 cursor-pointer border border-border/30"
+                    onClick={() => handleConversationClick(conversation.id)}
                   >
                     <div className="flex justify-between items-start">
                       <div>
@@ -258,13 +231,6 @@ export default function DashboardPage() {
               </div>
             )}
           </ScrollArea>
-
-          <Button
-            className="w-full mt-6 bg-primary hover:bg-primary/80 text-background font-medium"
-            onClick={() => router.push("/resources")}
-          >
-            View Well-being Resources
-          </Button>
         </div>
       </div>
     </div>

@@ -1,8 +1,10 @@
 import csv
 import io
+import re
 from sqlalchemy.orm import Session
 from database.models import Master, HRUser, Conversation, Message, ActivityTracker, Leave, Onboarding, Performance, Rewards, Vibemeter
 import json
+from typing import Dict, Any
 
 def parse_bool(value: str) -> bool:
     return value.strip().lower() == "true"
@@ -29,6 +31,34 @@ def parse_shap_values(value: str):
         return []
     # Split by comma and strip whitespace
     return [item.strip() for item in value.split(",")]
+
+def parse_shap_features(feature_string: str) -> Dict[str, Any]:
+    """Parse SHAP feature string into dictionary"""
+    features = {}
+    if not feature_string:
+        return features
+    
+    # This regex matches feature names and their values in parentheses
+    pattern = r'([A-Za-z_]+)\(([^)]+)\)'
+    matches = re.findall(pattern, feature_string)
+    
+    for feature_name, value in matches:
+        # Optional: Trim any extra whitespace
+        feature_name = feature_name.strip()
+        value = value.strip()
+        try:
+            # Log the feature name and value (or remove after debugging)
+            # Convert to float if it contains a dot, otherwise int
+            if '.' in value:
+                features[feature_name] = float(value)
+            else:
+                features[feature_name] = int(value)
+        except ValueError:
+            # If conversion fails, keep as string
+            features[feature_name] = value
+    
+    return features
+
 
 def ingest_csv_data(file_content: bytes, table: str, db: Session):
     """
@@ -234,51 +264,57 @@ def update_master_feature_vector(db: Session):
     db.commit()
 
 
-def ingest_shap_values(file_content: bytes, db: Session):
+def ingest_shap_values(file_content: bytes, db: Session) -> int:
     """
-    Ingests SHAP values and updates the Master table by employee_id.
-    Uses csv.DictReader instead of pandas.
+    Ingests SHAP values from a CSV file and updates the Master table.
+    Parses the feature strings into a proper dictionary format.
     """
     try:
-        # 1. Decode the CSV content
+        # Decode the CSV content
         decoded = file_content.decode("utf-8")
         reader = csv.DictReader(io.StringIO(decoded))
-
-        # 2. Validate required columns
-        required_columns = {"employee_id", "shap_values", "is_selected"}
+        
+        # Validate required columns
+        required_columns = {"employee_id", "aggregated_shap_features", "is_selected"}
         if not required_columns.issubset(reader.fieldnames):
             missing_cols = required_columns - set(reader.fieldnames)
             raise ValueError(f"Missing required columns: {missing_cols}")
-
+        
         updated_count = 0
 
         for row in reader:
-            employee_id = row["employee_id"]
+            employee_id = row["employee_id"].strip()
+            features = parse_shap_features(row["aggregated_shap_features"])
+            # print(f"Features for {employee_id}: {features}")
             
-            # Extract SHAP values
-            shap_str = row["shap_values"]  # e.g., "Average_Vibe_Score(0.0323), Total_Reward_Points(0.0290), ..."
-            
-            # Parse and extract SHAP names without scores
-            shap_values = [item.split('(')[0].strip() for item in shap_str.split(',')]
-            
-            # Take only the top 6 SHAP values
-            shap_values = shap_values[:6]
+            # Convert is_selected to boolean
+            is_selected = row["is_selected"].strip().lower() == "true"
+            print(f"Is selected for {employee_id}: {is_selected}")
 
-            # Convert `is_selected` to boolean
-            is_selected = row["is_selected"].lower() == "true"
-
-            # 4. Query the existing record by employee_id
+            # Query the existing record by employee_id
             master_record = db.query(Master).filter(Master.employee_id == employee_id).first()
+            # print(f"Master record for {employee_id}: {master_record}")
 
             if master_record:
-                # 5. Update existing record
-                master_record.shap_values = shap_values
+                # Update the existing record (assuming column name is shap_values)
+                master_record.new_shap_values = features
+                print(f"Updated shap_values for {employee_id}")
                 master_record.is_selected = is_selected
                 updated_count += 1
+                print(f"Updated record for {employee_id}")
             else:
-                print(f"Employee ID {employee_id} not found. Skipping...")
+                # Create a new record if it doesn't exist
+                print(f"Creating new record for {employee_id}")
+                new_record = Master(
+                    employee_id=employee_id,
+                    new_shap_values=features,
+                    is_selected=is_selected
+                )
+                db.add(new_record)
+                updated_count += 1
 
-        # 6. Commit all changes
+        # Commit all changes
+        print(f"Committing changes to database.")
         db.commit()
         return updated_count
     except Exception as e:

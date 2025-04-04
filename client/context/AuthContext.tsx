@@ -18,6 +18,7 @@ import {
   TwitterAuthProvider,
 } from "firebase/auth";
 import { app } from "@/firebase/config";
+import { useRouter } from "next/navigation";
 
 const auth = getAuth(app);
 
@@ -29,7 +30,7 @@ export interface Employee {
   is_selected: boolean;
   sentimental_score: number;
   shap_values: string[];
-  is_resolved:boolean
+  is_Flagged: boolean;
 }
 
 export interface HRUser {
@@ -56,6 +57,7 @@ interface AuthContextType {
   setSignInModalVisible: (visible: boolean) => void;
   fetchEmployeeProfile: () => Promise<Employee>;
   fetchHRProfile: () => Promise<HRUser>;
+  check_role: (role: string) => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -67,6 +69,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [hrData, setHRData] = useState<HRUser | null>(null);
   const [loading, setLoading] = useState(false);
   const [signInModalVisible, setSignInModalVisible] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -75,22 +78,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           typeof window !== "undefined" && localStorage.getItem("access_token");
         if (token) {
           setIsLogged(true);
-          const userRole = localStorage.getItem("user_role");
-          if (userRole === "admin") {
+          const decoded = JSON.parse(atob(token.split('.')[1])); 
+          console.log("Fetching HR Profile Based on role :",decoded.role)
+          if (decoded.role === "hr") {
             await fetchHRProfile();
-          } else if (userRole === "employee") {
+          } else if (decoded.role === "employee") {
             await fetchEmployeeProfile();
           }
         }
       } catch (error) {
         console.error("Error fetching user profile:", error);
       } finally {
-        setLoading(false); // Ensure loading state is updated
+        setLoading(false);
       }
     };
     fetchData();
   }, []);
 
+  const check_role = (role:string) => {
+    const token = localStorage.getItem('access_token');
+    if (!token) return false;
+    try {
+      const decoded = JSON.parse(atob(token.split('.')[1])); 
+      if (decoded.role === role ) {
+        return true; 
+      }
+      return false;
+    } catch (error) {
+      console.error("Invalid token:", error);
+      return false; 
+    }
+  }
+  
   const signIn = async (email: string, password: string) => {
     const userCredential = await signInWithEmailAndPassword(
       auth,
@@ -154,7 +173,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const fetchEmployeeProfile = async () => {
     try {
       const token = localStorage.getItem("access_token");
-      console.log(token)
+      console.log(token);
       const response = await fetch("http://127.0.0.1:8000/api/user/employee", {
         method: "GET",
         headers: {
@@ -207,6 +226,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLogged(false);
     localStorage.removeItem("access_token");
     localStorage.removeItem("user_role");
+    router.push("/");
   };
 
   return (
@@ -229,6 +249,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         fetchEmployeeProfile,
         fetchHRProfile,
         setHRData,
+        check_role,
       }}
     >
       {!loading ? children : <p>Loading...</p>}

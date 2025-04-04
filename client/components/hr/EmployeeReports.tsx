@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -11,7 +11,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { FileText, Download } from "lucide-react";
+import { FileText, Download, View } from "lucide-react";
 
 interface EmployeeReport {
   id: string;
@@ -19,60 +19,47 @@ interface EmployeeReport {
   position: string;
   flagged: boolean;
 }
-
-const employeeReports: EmployeeReport[] = [
-  {
-    id: "EMP001",
-    name: "Alex Dwayne Johnson",
-    position: "Senior Developer",
-    flagged: false,
-  },
-  {
-    id: "EMP002",
-    name: "Sarah Williams",
-    position: "Product Manager",
-    flagged: true,
-  },
-  {
-    id: "EMP003",
-    name: "Michael Jordan Chen",
-    position: "UI/UX Designer",
-    flagged: false,
-  },
-  {
-    id: "EMP004",
-    name: "Emily Davis",
-    position: "Marketing Specialist",
-    flagged: false,
-  },
-  {
-    id: "EMP005",
-    name: "Robert Louis Taylor",
-    position: "System Analyst",
-    flagged: true,
-  },
-  {
-    id: "EMP006",
-    name: "Jennifer Bruce Lee",
-    position: "Data Scientist",
-    flagged: false,
-  },
-  {
-    id: "EMP007",
-    name: "David Harvey Wilson",
-    position: "Project Manager",
-    flagged: true,
-  },
-];
+interface Employee {
+  Employee_ID: string;
+  Employee_Name: string;
+  Employee_Email: string;
+  Employee_Role: string;
+  Is_Selected: boolean;
+  Sentimental_Score: number;
+  Is_Flagged: boolean;
+  Report: string;
+  Feature_Vector: string;
+}
 
 interface EmployeeReportsProps {
   searchQuery?: string;
+  employees: Employee[];
 }
 
-export function EmployeeReports({ searchQuery = "" }: EmployeeReportsProps) {
+export function EmployeeReports({ searchQuery = "" , employees = [] }: EmployeeReportsProps) {
+  // console.log("Props received:", employees);
   const [hoveredRow, setHoveredRow] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("all");
 
+  
+  const employeeReports: EmployeeReport[] = useMemo(
+    () =>
+      (employees || []).map((employee) => ({
+        id: employee.Employee_ID,
+        name: employee.Employee_Name,
+        position: employee.Employee_Role,
+        flagged: employee.Is_Flagged,
+      })),
+    [employees]
+  );
+
+  useEffect(() => {
+    if (employees) {
+      console.log("Employee data received:", employees);
+    }
+  }, [employees]);
+  
+  
   const handleDownload = (employeeId: string) => {
     // Replace this with actual PDF download functionality
     console.log(`Downloading report for employee ${employeeId}`);
@@ -192,7 +179,7 @@ export function EmployeeReports({ searchQuery = "" }: EmployeeReportsProps) {
                             onClick={() => handleDownload(report.id)}
                             className="px-2 text-[#26890d] border border-[#26890d]/30 hover:bg-[#2a2f1e] hover:text-[#26890d] hover:border-[#26890d]/30 hover:opacity-100"
                           >
-                            <Download size={14} className="mr-1" /> PDF
+                            <View size={14} className="mr-1" /> PDF
                           </Button>
                         </TableCell>
                       </TableRow>

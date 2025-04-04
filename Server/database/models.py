@@ -14,6 +14,7 @@ class Master(Base):
     feature_vector = Column(MutableList.as_mutable(JSON), default=[])      # Default: empty list.
     is_selected = Column(Boolean, default=False)                        # Default: not selected for conversation.
     shap_values = Column(MutableList.as_mutable(JSON), default=[])      # Default: empty list.
+    new_shap_values = Column(MutableDict.as_mutable(JSON), default={})      # Default: empty list.
     report = Column(Text, default="")                                   # Default: empty string.
     sentimental_score = Column(Integer, default=0)                      # Default: 0.
     is_Flagged = Column(Boolean, default=False)                        # Default: not resolved.

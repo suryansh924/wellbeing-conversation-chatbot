@@ -10,8 +10,6 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import axios from "axios";
 import { useAuth } from "@/context/AuthContext"; // Assuming you have an AuthContext
 import Message from "@/components/Conversation/message";
-import { server } from "@/utils";
-import { set } from "zod";
 
 interface Message {
   id: string;
@@ -29,7 +27,7 @@ export default function ConversationPage() {
 
   const TotalQuestions = 6
   
-  const { employeeData } = useAuth();
+  const { employeeData ,check_role} = useAuth();
   const router = useRouter();
   const [employee_name, setEmployee_Name] = useState("");
   const [employee_id, setEmployee_Id] = useState("");
@@ -62,6 +60,18 @@ export default function ConversationPage() {
   const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
   const [isAudioProcessing, setIsAudioProcessing] = useState(false);
   const [hasEnded, setHasEnded]  = useState(false);
+
+  useEffect(() => {
+    try {
+      if (!check_role("employee")) {
+        localStorage.removeItem('access_token');
+        router.push("/");
+        return;
+      }
+    } catch (error) {
+      console.log(error)
+    }
+}, []);
 
 
   const checkForIncompleteConv = async () => {

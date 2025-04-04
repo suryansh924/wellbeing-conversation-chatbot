@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState } from "react";
 import {
   BarChart,
@@ -14,6 +16,7 @@ import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { useAuth } from "@/context/AuthContext";
 
 interface SidebarProps {
   collapsed: boolean;
@@ -32,6 +35,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
       setActiveSection(id);
     }
   };
+  const { logout } = useAuth();
 
   return (
     <div
@@ -52,7 +56,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
           onClick={onToggle}
           className="text-[#26890d] transition-colors duration-200"
           style={{
-            ['--hover-bg-color' as string]: "rgba(38, 137, 13, 0.2)",
+            ["--hover-bg-color" as string]: "rgba(38, 137, 13, 0.2)",
           }}
           onMouseOver={(e) => {
             e.currentTarget.style.backgroundColor = "rgba(38, 137, 13, 0.2)";
@@ -147,6 +151,10 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
             <Button
               variant="default"
               className="p-2 mt-2 justify-center bg-[#252525] text-[#26890d] hover:bg-[#26890d] hover:text-black transition-colors duration-200"
+              onClick={() => {
+                logout();
+                onToggle();
+              }}
             >
               <LogOut size={16} />
             </Button>
