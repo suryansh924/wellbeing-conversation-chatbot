@@ -104,8 +104,9 @@ def get_employees(db: Session = Depends(get_db)):
                 "Employee_Role": emp.role,
                 "Report": emp.report,
                 "Sentimental_Score": emp.sentimental_score,
-                "is_Flagged": emp.is_Flagged,
+                "Is_Flagged": emp.is_Flagged,
                 "Is_Selected": emp.is_selected,
+                "Conversation_Completed": emp.conversation_completed
             }
             for emp in employees
         ]

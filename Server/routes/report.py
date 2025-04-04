@@ -10,7 +10,7 @@ from datetime import datetime
 from pydantic import BaseModel
 from typing import Dict
 from database.conn import get_db
-from database.models import Conversation, Message
+from database.models import Conversation, Message, Master
 from transformers import pipeline
 from aws_uploader import upload_pdf_to_s3
 
@@ -60,6 +60,8 @@ def generate_report(request: ReportRequest, db: Session = Depends(get_db)):
     """
     # Fetch conversation record
     conversation = db.query(Conversation).filter(Conversation.id == request.conversation_id).first()
+    employee = db.query(Master).filter(Master.employee_id == request.employee_id).first()
+
     if not conversation:
         raise HTTPException(status_code=404, detail="Conversation not found")
     
@@ -141,6 +143,9 @@ def generate_report(request: ReportRequest, db: Session = Depends(get_db)):
     pdf_file.close()
 
     conversation.report = s3_url
+    # employee.report = s3_url
+    employee.conversation_completed = True
+
     db.commit()
 
     return {"message": "PDF report uploaded successfully", "pdf_url": s3_url}
