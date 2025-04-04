@@ -132,7 +132,7 @@
 
   /* HR Specific */
   .hr-panel {
-    @apply bg-hr-black/80 backdrop-blur-sm border border-hr-green/20 rounded-xl shadow-xl;
+    @apply bg-card backdrop-blur-sm border border-[#26890d]/30 rounded-xl shadow-xl;
   }
 
   /* HR Reports Component */
@@ -269,6 +269,31 @@
   
   .hr-chart-appear {
     animation: chartAppear 0.8s ease-out forwards;
+  }
+
+  /* HR Upload Component */
+  .hr-upload-container {
+    @apply bg-hr-black/80 backdrop-blur-sm border border-[#26890d]/20 rounded-xl shadow-xl p-6;
+  }
+
+  .hr-dropzone {
+    @apply border-2 border-dashed rounded-lg p-8 text-center;
+    @apply transition-all duration-200;
+    @apply border-[#26890d]/30 hover:border-[#26890d]/60;
+  }
+
+  .hr-dropzone-active {
+    @apply border-[#26890d] bg-[#26890d]/10;
+  }
+
+  .hr-upload-file-success {
+    @apply flex items-center justify-between p-3 rounded-lg;
+    @apply border border-[#26890d]/30 bg-[#26890d]/10;
+  }
+
+  .hr-upload-file-error {
+    @apply flex items-center justify-between p-3 rounded-lg;
+    @apply border border-red-500/30 bg-red-500/10;
   }
 }
 

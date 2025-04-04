@@ -10,6 +10,7 @@ import { BarChart as BarChartIcon, FileText, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/context/AuthContext";
 import axios from "axios";
+import { UploadData } from "@/components/hr/UploadData";
 
 interface Employee {
   Employee_ID: string;
@@ -26,7 +27,7 @@ interface Employee {
 const HRDashboard: React.FC = () => {
   const server = "http://127.0.0.1:8000";
 
-  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(true);
   const [isLoaded, setIsLoaded] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -36,33 +37,33 @@ const HRDashboard: React.FC = () => {
   const reportsRef = useRef<HTMLDivElement | null>(null);
 
   const router = useRouter();
-  const { fetchHRProfile, hrData , check_role } = useAuth();
+  const { fetchHRProfile, hrData, check_role } = useAuth();
 
   useEffect(() => {
-      setLoading(true);
-      try {
-        console.log("Hi")
-        if (!check_role("hr")) {
-          localStorage.removeItem('access_token');
-          router.push("/");
-          return;
-        }
-      } catch (error) {
-        console.log(error)
-      } finally {
-        setLoading(false);
+    setLoading(true);
+    try {
+      console.log("Hi");
+      if (!check_role("hr")) {
+        localStorage.removeItem("access_token");
+        router.push("/");
+        return;
       }
+    } catch (error) {
+      console.log(error);
+    } finally {
+      setLoading(false);
+    }
   }, []);
-  
+
   useEffect(() => {
     const fetchAllEmployees = async () => {
-      console.log("Fetching All Selected Employees")
+      console.log("Fetching All Selected Employees");
       try {
         setLoading(true);
-        const response = await axios.get(
-          `${server}/api/data/employees`
+        const response = await axios.get(`${server}/api/data/employees`);
+        const selectedEmployees = response.data.employees.filter(
+          (employee: any) => employee.Is_Selected === true
         );
-        const selectedEmployees = response.data.employees.filter((employee:any)=> employee.Is_Selected === true);
         console.log("Selected Employee data:", response.data);
         setEmployees(selectedEmployees);
         setError(null);
@@ -90,7 +91,7 @@ const HRDashboard: React.FC = () => {
   );
 
   return (
-    <div className="flex h-screen bg-hr-black overflow-hidden">
+    <div className="flex h-screen bg-hr-black overflow-hidden ml-15">
       <Sidebar
         collapsed={sidebarCollapsed}
         onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
@@ -169,9 +170,21 @@ const HRDashboard: React.FC = () => {
                   <p className="text-red-500">{error}</p>
                 </div>
               ) : (
-                <EmployeeReports searchQuery={searchQuery} employees = {employees}/>
+                <EmployeeReports
+                  searchQuery={searchQuery}
+                  employees={employees}
+                />
               )}
             </div>
+          </div>
+
+          {/* Upload Data Section */}
+          <div id="upload-data-section" className="space-y-6 pt-8">
+            <h2 className="text-2xl font-bold text-[#26890d] mb-4 flex items-center gap-2">
+              <FileText size={24} className="text-[#26890d]" />
+              Upload Data
+            </h2>
+            <UploadData />
           </div>
         </div>
       </main>

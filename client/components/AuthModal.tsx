@@ -23,7 +23,6 @@ import { motion, AnimatePresence } from "framer-motion";
 
 // Add this to your globals.css
 
-
 // API call to check employee ID via backend.
 async function checkEmployeeId(employeeId: string): Promise<boolean> {
   try {
@@ -221,21 +220,23 @@ export default function AuthModal() {
       setLoading(true);
       try {
         await signIn(LoginformData.email, LoginformData.password);
-        const res = await axios.post("http://127.0.0.1:8000/api/user/login", {
-          email: LoginformData.email,
-          password: LoginformData.password
-        },
-        {
-          headers: {
-            "Content-Type": "application/json"
+        const res = await axios.post(
+          "http://127.0.0.1:8000/api/user/login",
+          {
+            email: LoginformData.email,
+            password: LoginformData.password,
+          },
+          {
+            headers: {
+              "Content-Type": "application/json",
+            },
           }
-        }
-      
-        )
-        console.log(res)
-        const token = res.data.token
-        localStorage.setItem("access_token", token)
-        setIsLogged(true)
+        );
+        console.log(res);
+        const token = res.data.token;
+        localStorage.setItem("access_token", token);
+        localStorage.setItem("user_role", res.data.role);
+        setIsLogged(true);
         await handlePostAuth();
         setSignInModalVisible(false);
       } catch (err: unknown) {
@@ -296,6 +297,7 @@ export default function AuthModal() {
         );
         const token = res.data.token;
         localStorage.setItem("access_token", token);
+        localStorage.setItem("user_role", res.data.role);
         setIsLogged(true);
         await handlePostAuth();
         setSignInModalVisible(false);
@@ -338,6 +340,7 @@ export default function AuthModal() {
       });
       const token = res.data.token;
       localStorage.setItem("access_token", token);
+      localStorage.setItem("user_role", res.data.role);
       setIsLogged(true);
       await handlePostAuth();
       setSignInModalVisible(false);
@@ -363,6 +366,7 @@ export default function AuthModal() {
       });
       const token = res.data.token;
       localStorage.setItem("access_token", token);
+      localStorage.setItem("user_role", res.data.role);
       setIsLogged(true);
       await handlePostAuth();
       setSignInModalVisible(false);
@@ -377,50 +381,50 @@ export default function AuthModal() {
 
   // Animation variants
   const formVariants = {
-    hidden: { 
-      opacity: 0, 
-      y: 20, 
-      scale: 0.95 
-    },
-    visible: { 
-      opacity: 1, 
-      y: 0, 
-      scale: 1,
-      transition: { 
-        duration: 0.4, 
-        ease: "easeOut" 
-      }
-    },
-    exit: { 
-      opacity: 0, 
-      y: -20, 
+    hidden: {
+      opacity: 0,
+      y: 20,
       scale: 0.95,
-      transition: { 
-        duration: 0.3, 
-        ease: "easeIn" 
-      }
-    }
+    },
+    visible: {
+      opacity: 1,
+      y: 0,
+      scale: 1,
+      transition: {
+        duration: 0.4,
+        ease: "easeOut",
+      },
+    },
+    exit: {
+      opacity: 0,
+      y: -20,
+      scale: 0.95,
+      transition: {
+        duration: 0.3,
+        ease: "easeIn",
+      },
+    },
   };
 
   return (
     <Dialog open={signInModalVisible} onOpenChange={handleOpenChange}>
       {/* Trigger button with hover animation */}
       <DialogTrigger asChild>
-      <AnimatedButton
-  className="bg-black border border-white/50 text-white cursor-pointer text-lg font-semibold px-10 py-4 h-auto rounded-full shadow-md hover:shadow-lg hover:bg-[#0a0a0a] hover:border-white/60 group relative overflow-hidden"
->    Get Started
+        <AnimatedButton className="bg-black border border-white/50 text-white cursor-pointer text-lg font-semibold px-10 py-4 h-auto rounded-full shadow-md hover:shadow-lg hover:bg-[#0a0a0a] hover:border-white/60 group relative overflow-hidden">
+          {" "}
+          Get Started
         </AnimatedButton>
       </DialogTrigger>
 
       <DialogContent className="sm:max-w-[425px] dark bg-[#131313] text-white border-none dialog-content p-0 overflow-hidden">
         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 to-teal-500"></div>
-        
+
         <DialogHeader className="p-6 pb-2">
           <DialogTitle className="text-center text-2xl font-bold">
             {mode === "login" ? "Welcome Back" : "Join MoodPulse"}
           </DialogTitle>
         </DialogHeader>
-        
+
         <div className="p-6">
           <AnimatePresence mode="wait">
             {showLoginForm && (
@@ -441,7 +445,7 @@ export default function AuthModal() {
                       <FcGoogle className="text-xl" />
                       <span>Sign in with Google</span>
                     </button>
-                    
+
                     <button
                       type="button"
                       onClick={() => handleTwitterSignIn()}
@@ -450,13 +454,18 @@ export default function AuthModal() {
                       <FaTwitter className="text-xl" />
                       <span>Sign in with Twitter</span>
                     </button>
-                    
+
                     <div className="divider">
                       <span>Or continue with</span>
                     </div>
 
                     <div className="grid gap-2">
-                      <Label htmlFor="loginEmail" className="text-sm font-medium">Email</Label>
+                      <Label
+                        htmlFor="loginEmail"
+                        className="text-sm font-medium"
+                      >
+                        Email
+                      </Label>
                       <Input
                         id="loginEmail"
                         name="email"
@@ -467,12 +476,19 @@ export default function AuthModal() {
                         className="auth-input p-3 rounded-md"
                       />
                       {Loginerrors.email ? (
-                        <p className="text-red-500 text-xs mt-1">Enter valid email.</p>
+                        <p className="text-red-500 text-xs mt-1">
+                          Enter valid email.
+                        </p>
                       ) : null}
                     </div>
 
                     <div className="grid gap-2">
-                      <Label htmlFor="loginPassword" className="text-sm font-medium">Password</Label>
+                      <Label
+                        htmlFor="loginPassword"
+                        className="text-sm font-medium"
+                      >
+                        Password
+                      </Label>
                       <Input
                         id="loginPassword"
                         name="password"
@@ -484,16 +500,16 @@ export default function AuthModal() {
                       />
                       {Loginerrors.password ? (
                         <p className="text-red-500 text-xs mt-1">
-                          Password must contain at least 8 characters, including letters,
-                          numbers, and special characters
+                          Password must contain at least 8 characters, including
+                          letters, numbers, and special characters
                         </p>
                       ) : null}
                     </div>
                   </div>
 
                   {error && (
-                    <motion.div 
-                      initial={{ opacity: 0, y: -10 }} 
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
                       animate={{ opacity: 1, y: 0 }}
                       className="bg-red-500/10 border border-red-500/20 text-red-500 p-3 rounded-md text-sm"
                     >
@@ -509,9 +525,25 @@ export default function AuthModal() {
                     >
                       {loading ? (
                         <span className="flex items-center justify-center gap-2">
-                          <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          <svg
+                            className="animate-spin h-5 w-5"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                          >
+                            <circle
+                              className="opacity-25"
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                            ></circle>
+                            <path
+                              className="opacity-75"
+                              fill="currentColor"
+                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                            ></path>
                           </svg>
                           Signing In...
                         </span>
@@ -549,7 +581,12 @@ export default function AuthModal() {
               >
                 <form className="grid gap-4" onSubmit={handleVerifyEmployeeId}>
                   <div className="grid gap-2">
-                    <Label htmlFor="regEmployeeId" className="text-sm font-medium">Employee ID</Label>
+                    <Label
+                      htmlFor="regEmployeeId"
+                      className="text-sm font-medium"
+                    >
+                      Employee ID
+                    </Label>
                     <Input
                       id="regEmployeeId"
                       name="regEmployeeId"
@@ -566,8 +603,8 @@ export default function AuthModal() {
                   </div>
 
                   {error && (
-                    <motion.div 
-                      initial={{ opacity: 0, y: -10 }} 
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
                       animate={{ opacity: 1, y: 0 }}
                       className="bg-red-500/10 border border-red-500/20 text-red-500 p-3 rounded-md text-sm"
                     >
@@ -583,9 +620,25 @@ export default function AuthModal() {
                     >
                       {loading ? (
                         <span className="flex items-center justify-center gap-2">
-                          <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          <svg
+                            className="animate-spin h-5 w-5"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                          >
+                            <circle
+                              className="opacity-25"
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                            ></circle>
+                            <path
+                              className="opacity-75"
+                              fill="currentColor"
+                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                            ></path>
                           </svg>
                           Verifying...
                         </span>
@@ -621,7 +674,7 @@ export default function AuthModal() {
                 variants={formVariants}
               >
                 <div className="grid gap-4">
-                  <motion.div 
+                  <motion.div
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
                     className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 p-3 rounded-md text-sm text-center"
@@ -638,7 +691,7 @@ export default function AuthModal() {
                       <FcGoogle className="text-xl" />
                       <span>Register with Google</span>
                     </button>
-                    
+
                     <button
                       type="button"
                       onClick={() => handleTwitterSignIn(true)}
@@ -655,7 +708,9 @@ export default function AuthModal() {
 
                   <form className="grid gap-4" onSubmit={handleRegisterSubmit}>
                     <div className="grid gap-2">
-                      <Label htmlFor="regName" className="text-sm font-medium">Name</Label>
+                      <Label htmlFor="regName" className="text-sm font-medium">
+                        Name
+                      </Label>
                       <Input
                         id="regName"
                         name="name"
@@ -666,12 +721,16 @@ export default function AuthModal() {
                         className="auth-input p-3 rounded-md"
                       />
                       {Registererrors.name ? (
-                        <p className="text-red-500 text-xs mt-1">Enter valid Name.</p>
+                        <p className="text-red-500 text-xs mt-1">
+                          Enter valid Name.
+                        </p>
                       ) : null}
                     </div>
 
                     <div className="grid gap-2">
-                      <Label htmlFor="regEmail" className="text-sm font-medium">Email</Label>
+                      <Label htmlFor="regEmail" className="text-sm font-medium">
+                        Email
+                      </Label>
                       <Input
                         id="regEmail"
                         name="email"
@@ -682,12 +741,19 @@ export default function AuthModal() {
                         className="auth-input p-3 rounded-md"
                       />
                       {Registererrors.email ? (
-                        <p className="text-red-500 text-xs mt-1">Enter valid email.</p>
+                        <p className="text-red-500 text-xs mt-1">
+                          Enter valid email.
+                        </p>
                       ) : null}
                     </div>
 
                     <div className="grid gap-2">
-                      <Label htmlFor="regPassword" className="text-sm font-medium">Password</Label>
+                      <Label
+                        htmlFor="regPassword"
+                        className="text-sm font-medium"
+                      >
+                        Password
+                      </Label>
                       <Input
                         id="regPassword"
                         name="password"
@@ -706,7 +772,12 @@ export default function AuthModal() {
                     </div>
 
                     <div className="grid gap-2">
-                      <Label htmlFor="regConfirmPassword" className="text-sm font-medium">Confirm Password</Label>
+                      <Label
+                        htmlFor="regConfirmPassword"
+                        className="text-sm font-medium"
+                      >
+                        Confirm Password
+                      </Label>
                       <Input
                         id="regConfirmPassword"
                         name="confirmPassword"
@@ -724,8 +795,8 @@ export default function AuthModal() {
                     </div>
 
                     {error && (
-                      <motion.div 
-                        initial={{ opacity: 0, y: -10 }} 
+                      <motion.div
+                        initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
                         className="bg-red-500/10 border border-red-500/20 text-red-500 p-3 rounded-md text-sm"
                       >
@@ -741,9 +812,25 @@ export default function AuthModal() {
                       >
                         {loading ? (
                           <span className="flex items-center justify-center gap-2">
-                            <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            <svg
+                              className="animate-spin h-5 w-5"
+                              xmlns="http://www.w3.org/2000/svg"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                            >
+                              <circle
+                                className="opacity-25"
+                                cx="12"
+                                cy="12"
+                                r="10"
+                                stroke="currentColor"
+                                strokeWidth="4"
+                              ></circle>
+                              <path
+                                className="opacity-75"
+                                fill="currentColor"
+                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                              ></path>
                             </svg>
                             Registering...
                           </span>

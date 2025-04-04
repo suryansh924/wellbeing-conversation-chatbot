@@ -134,7 +134,7 @@ export default function DashboardPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen bg-background/50 text-foreground">
       {/* Fixed Header */}
       <header
         className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 ${
@@ -253,7 +253,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Past Conversations - keep your existing code */}
-          <div className="glass-card p-6 rounded-xl">
+          <div className="bg-surface/40 p-6 rounded-xl">
             <h2 className="text-xl font-semibold text-primary-light mb-4">
               Past Conversations
             </h2>
@@ -271,7 +271,7 @@ export default function DashboardPage() {
                   {pastConversations.map((conversation) => (
                     <div
                       key={conversation.id}
-                      className="stats-card p-4 hover:bg-primary-dark/50 rounded-lg transition-colors ease-in-out duration-200 cursor-pointer border border-border/30"
+                      className="stats-card p-4 hover:bg-surface/50 rounded-lg transition-colors ease-in-out duration-200 cursor-pointer border border-border/30"
                       onClick={() => handleConversationClick(conversation.id)}
                     >
                       <div className="flex justify-between items-start">
