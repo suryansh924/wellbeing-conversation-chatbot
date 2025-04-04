@@ -18,12 +18,14 @@ interface Employee {
   Employee_Role: string;
   Is_Selected: boolean;
   Sentimental_Score: number;
-  Is_Resolved: boolean;
+  Is_Flagged: boolean;
   Report: string;
   Feature_Vector: string;
 }
 
-const hrDashboard: React.FC = () => {
+const HRDashboard: React.FC = () => {
+  const server = "http://127.0.0.1:8000";
+
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false);
   const [isLoaded, setIsLoaded] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -34,43 +36,35 @@ const hrDashboard: React.FC = () => {
   const reportsRef = useRef<HTMLDivElement | null>(null);
 
   const router = useRouter();
-  const { fetchHRProfile, hrData } = useAuth();
+  const { fetchHRProfile, hrData , check_role } = useAuth();
 
   useEffect(() => {
-    // Check if user is authenticated
-    async function checkAuth() {
       setLoading(true);
       try {
-        // Check if token exists in localStorage
-        const token = localStorage.getItem("access_token");
-        if (!token) {
-          console.log("No token found, redirecting to login");
+        console.log("Hi")
+        if (!check_role("hr")) {
+          localStorage.removeItem('access_token');
           router.push("/");
           return;
         }
       } catch (error) {
-        console.error("Authentication error:", error);
-        // Clear invalid credentials
-        localStorage.removeItem("access_token");
-        localStorage.removeItem("user_role");
-        router.push("/");
+        console.log(error)
       } finally {
         setLoading(false);
       }
-    }
-
-    checkAuth();
-  }, [router, hrData]);
-
+  }, []);
+  
   useEffect(() => {
     const fetchAllEmployees = async () => {
+      console.log("Fetching All Selected Employees")
       try {
         setLoading(true);
         const response = await axios.get(
-          "http://127.0.0.1:8000/api/data/employees"
+          `${server}/api/data/employees`
         );
-        console.log("Employee data:", response.data);
-        setEmployees(response.data.employees);
+        const selectedEmployees = response.data.employees.filter((employee:any)=> employee.Is_Selected === true);
+        console.log("Selected Employee data:", response.data);
+        setEmployees(selectedEmployees);
         setError(null);
       } catch (error) {
         console.error("Error fetching employees:", error);
@@ -80,11 +74,9 @@ const hrDashboard: React.FC = () => {
         setIsLoaded(true);
       }
     };
-
     fetchAllEmployees();
   }, []);
 
-  // Calculate flagged vs unflagged counts for the pie chart
   const selectedStats = employees.reduce(
     (acc, employee) => {
       if (employee.Is_Selected) {
@@ -177,7 +169,7 @@ const hrDashboard: React.FC = () => {
                   <p className="text-red-500">{error}</p>
                 </div>
               ) : (
-                <EmployeeReports searchQuery={searchQuery} />
+                <EmployeeReports searchQuery={searchQuery} employees = {employees}/>
               )}
             </div>
           </div>
@@ -187,4 +179,4 @@ const hrDashboard: React.FC = () => {
   );
 };
 
-export default hrDashboard;
+export default HRDashboard;

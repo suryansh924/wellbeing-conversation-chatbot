@@ -28,7 +28,7 @@ export interface Conversation {
 export default function DashboardPage() {
   const router = useRouter();
   const menuRef = useRef<HTMLDivElement>(null);
-  const { fetchEmployeeProfile, logout, employeeData } = useAuth();
+  const { fetchEmployeeProfile, logout, employeeData, check_role } = useAuth();
   const [pastConversations, setPastConversations] = useState<Conversation[]>(
     []
   );
