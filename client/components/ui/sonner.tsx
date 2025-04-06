@@ -27,6 +27,9 @@ const Toaster = ({ ...props }: ToasterProps) => {
       closeButton={true}
       position="bottom-right"
       richColors={true}
+      visibleToasts={2} // Limit number of visible toasts
+      gap={8} // Add more gap between toasts
+      offset={16} // Offset from the edge of the screen
       {...props}
     />
   )

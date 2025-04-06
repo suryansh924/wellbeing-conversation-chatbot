@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { useAuth } from "@/context/AuthContext";
 import axios from "axios";
 import { UploadData } from "@/components/hr/UploadData";
+import { toast } from "sonner"; // Import toast from sonner
 
 interface Employee {
   Employee_ID: string;
@@ -39,6 +40,10 @@ const HRDashboard: React.FC = () => {
 
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [dataLoadingStatus, setDataLoadingStatus] = useState({
+    employees: false,
+    reports: false,
+  });
   const analyticsRef = useRef<HTMLDivElement | null>(null);
   const reportsRef = useRef<HTMLDivElement | null>(null);
 
@@ -64,8 +69,11 @@ const HRDashboard: React.FC = () => {
   useEffect(() => {
     const fetchAllEmployees = async () => {
       console.log("Fetching All Selected Employees");
+      if (dataLoadingStatus.employees) return; // Prevent duplicate API calls
+
       try {
         setLoading(true);
+        setDataLoadingStatus((prev) => ({ ...prev, employees: true }));
         const response = await axios.get(`${server}/api/data/employees`);
         const selectedEmployees = response.data.employees.filter(
           (employee: any) => employee.Is_Selected === true
@@ -73,35 +81,71 @@ const HRDashboard: React.FC = () => {
         console.log("Selected Employee data:", selectedEmployees);
         setEmployees(selectedEmployees);
         setError(null);
+
+        // Only show success toast if there was previously an error
+        // to avoid too many success messages
+        if (error) {
+          setTimeout(() => {
+            toast.success("Data refreshed", {
+              description: "Employee data retrieved successfully",
+              duration: 3000,
+            });
+          }, 300);
+        }
       } catch (error) {
         console.error("Error fetching employees:", error);
         setError("Failed to load employee data");
+        toast.error("Failed to load data", {
+          description: "Could not retrieve employee data. Please try again later.",
+          id: "employees-error", // ID prevents duplicate toasts
+          duration: 5000,
+        });
       } finally {
         setLoading(false);
         setIsLoaded(true);
+        setDataLoadingStatus((prev) => ({ ...prev, employees: false }));
       }
     };
     fetchAllEmployees();
 
     const fetchTodaysConv = async () => {
       console.log("Fetching Todays Conv:");
+      if (dataLoadingStatus.reports) return; // Prevent duplicate API calls
+
       try {
         setLoading(true);
+        setDataLoadingStatus((prev) => ({ ...prev, reports: true }));
         const response = await axios.get(
           `${server}/api/conversation/todays_reports`
         );
         setEmployeesWithReports(response.data);
         setError(null);
+
+        // Success toast is shown only if there was an error previously
+        if (error) {
+          setTimeout(() => {
+            toast.success("Reports refreshed", {
+              description: "Today's conversation reports retrieved successfully",
+              duration: 3000,
+            });
+          }, 600); // Add delay to prevent overlapping with other toasts
+        }
       } catch (error) {
         console.error("Error fetching employees with reports:", error);
         setError("Failed to load employee data");
+        toast.error("Failed to load reports", {
+          description: "Could not retrieve today's conversation reports. Please try again later.",
+          id: "reports-error", // ID prevents duplicate toasts
+          duration: 5000,
+        });
       } finally {
         setLoading(false);
         setIsLoaded(true);
+        setDataLoadingStatus((prev) => ({ ...prev, reports: false }));
       }
     };
     fetchTodaysConv();
-  }, []);
+  }, [error]); // Re-run when error state changes, allowing refreshes after errors
 
   const selectedStats = employees.reduce(
     (acc, employee) => {

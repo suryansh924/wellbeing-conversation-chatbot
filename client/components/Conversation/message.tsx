@@ -92,8 +92,8 @@ function Message({ id, content, isUser, timestamp }: MessageProps) {
                   onClick={SpeakAloud}
                   className={`h-6 w-6 p-0 ml-2 rounded-full ${
                     isSpeakerOn
-                      ? "text-green-500"
-                      : "text-gray-400 hover:text-gray-600"
+                      ? "text-gray-400"
+                      : "text-gray-400 hover:text-white"
                   }`}
                   title={isSpeakerOn ? "Stop speaking" : "Speak message"}
                 >
