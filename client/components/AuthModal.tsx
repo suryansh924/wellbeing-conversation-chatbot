@@ -20,6 +20,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { FaTwitter } from "react-icons/fa";
 import { motion, AnimatePresence } from "framer-motion";
+import { toast } from "sonner"; // Import toast from sonner
 
 // Add this to your globals.css
 
@@ -219,6 +220,9 @@ export default function AuthModal() {
     if (result.success) {
       setLoading(true);
       try {
+        // Show loading toast
+        toast.loading("Logging in...", { id: "login-attempt" });
+
         await signIn(LoginformData.email, LoginformData.password);
         const res = await axios.post(
           "http://127.0.0.1:8000/api/user/login",
@@ -237,10 +241,24 @@ export default function AuthModal() {
         localStorage.setItem("access_token", token);
         localStorage.setItem("user_role", res.data.role);
         setIsLogged(true);
+
+        // Dismiss loading toast and show success
+        toast.dismiss("login-attempt");
+        toast.success("Login Successful", {
+          description: "Welcome back! Redirecting to your dashboard...",
+        });
+
         await handlePostAuth();
         setSignInModalVisible(false);
       } catch (err: unknown) {
         setError("Invalid Credentials");
+
+        // Dismiss loading toast and show error
+        toast.dismiss("login-attempt");
+        toast.error("Login Failed", {
+          description: "Invalid email or password. Please try again.",
+          id: "login-error",
+        });
       } finally {
         setLoading(false);
       }
