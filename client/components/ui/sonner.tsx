@@ -25,7 +25,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
       }}
       expand={false}
       closeButton={true}
-      position="bottom-right"
+      position="top-right"
       richColors={true}
       visibleToasts={2} // Limit number of visible toasts
       gap={8} // Add more gap between toasts

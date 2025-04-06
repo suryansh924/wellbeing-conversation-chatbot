@@ -6,8 +6,9 @@ import { HRBarChart } from "@/components/hr/BarChart";
 import { HRPieChart } from "@/components/hr/PieChart";
 import { Sidebar } from "@/components/hr/Sidebar";
 import { EmployeeReports } from "@/components/hr/EmployeeReports";
-import { BarChart as BarChartIcon, FileText, Search } from "lucide-react";
+import { BarChart as BarChartIcon, FileText, Search, RefreshCw } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
 import axios from "axios";
 import { UploadData } from "@/components/hr/UploadData";
@@ -43,6 +44,7 @@ const HRDashboard: React.FC = () => {
   const [dataLoadingStatus, setDataLoadingStatus] = useState({
     employees: false,
     reports: false,
+    generating: false,
   });
   const analyticsRef = useRef<HTMLDivElement | null>(null);
   const reportsRef = useRef<HTMLDivElement | null>(null);
@@ -51,101 +53,193 @@ const HRDashboard: React.FC = () => {
   const { fetchHRProfile, hrData, check_role } = useAuth();
 
   useEffect(() => {
-    setLoading(true);
-    try {
-      console.log("Hi");
-      if (!check_role("hr")) {
-        localStorage.removeItem("access_token");
+    const checkAuth = async () => {
+      setLoading(true);
+      toast.loading("Verifying HR credentials...", { id: "auth-check" });
+      
+      try {
+        const profile = await fetchHRProfile();
+        if (!check_role("hr")) {
+          toast.dismiss("auth-check");
+          toast.error("Authentication failed", {
+            description: "You are not authorized to access the HR dashboard",
+            duration: 5000,
+          });
+          localStorage.removeItem("access_token");
+          router.push("/");
+          return;
+        }
+        toast.dismiss("auth-check");
+        toast.success("Welcome to HR Dashboard", {
+          description: `Logged in as ${profile?.name || "HR Manager"}`,
+          duration: 3000,
+        });
+      } catch (error) {
+        console.log(error);
+        toast.dismiss("auth-check");
+        toast.error("Session expired", {
+          description: "Please log in again to continue",
+          duration: 5000,
+        });
         router.push("/");
-        return;
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.log(error);
-    } finally {
-      setLoading(false);
-    }
+    };
+    
+    checkAuth();
   }, []);
 
+  const fetchAllEmployees = async () => {
+    console.log("Fetching All Selected Employees");
+    if (dataLoadingStatus.employees) return; // Prevent duplicate API calls
+
+    try {
+      setLoading(true);
+      setDataLoadingStatus((prev) => ({ ...prev, employees: true }));
+      
+      // Show loading toast
+      toast.loading("Loading employee data...", { id: "employees-loading" });
+      
+      const response = await axios.get(`${server}/api/data/employees`);
+      const selectedEmployees = response.data.employees.filter(
+        (employee: any) => employee.Is_Selected === true
+      );
+      console.log("Selected Employee data:", selectedEmployees);
+      setEmployees(selectedEmployees);
+      setError(null);
+
+      // Dismiss loading toast and show success
+      toast.dismiss("employees-loading");
+      toast.success("Data loaded", {
+        description: `${selectedEmployees.length} employees retrieved successfully`,
+        duration: 3000,
+      });
+    } catch (error) {
+      console.error("Error fetching employees:", error);
+      setError("Failed to load employee data");
+      
+      // Dismiss loading toast and show error
+      toast.dismiss("employees-loading");
+      toast.error("Failed to load data", {
+        description: "Could not retrieve employee data. Please try again later.",
+        id: "employees-error", // ID prevents duplicate toasts
+        duration: 5000,
+      });
+    } finally {
+      setLoading(false);
+      setIsLoaded(true);
+      setDataLoadingStatus((prev) => ({ ...prev, employees: false }));
+    }
+  };
+
+  const fetchTodaysConv = async () => {
+    console.log("Fetching Todays Conv:");
+    if (dataLoadingStatus.reports) return; // Prevent duplicate API calls
+
+    try {
+      setLoading(true);
+      setDataLoadingStatus((prev) => ({ ...prev, reports: true }));
+      
+      // Show loading toast
+      toast.loading("Loading today's reports...", { id: "reports-loading" });
+      
+      const response = await axios.get(
+        `${server}/api/conversation/todays_reports`
+      );
+      setEmployeesWithReports(response.data);
+      setError(null);
+
+      // Dismiss loading toast and show success
+      toast.dismiss("reports-loading");
+      toast.success("Reports loaded", {
+        description: `${response.data.length} conversation reports retrieved`,
+        duration: 3000,
+      });
+    } catch (error) {
+      console.error("Error fetching employees with reports:", error);
+      setError("Failed to load employee data");
+      
+      // Dismiss loading toast and show error
+      toast.dismiss("reports-loading");
+      toast.error("Failed to load reports", {
+        description: "Could not retrieve today's conversation reports. Please try again later.",
+        id: "reports-error", // ID prevents duplicate toasts
+        duration: 5000,
+      });
+    } finally {
+      setLoading(false);
+      setIsLoaded(true);
+      setDataLoadingStatus((prev) => ({ ...prev, reports: false }));
+    }
+  };
+
   useEffect(() => {
-    const fetchAllEmployees = async () => {
-      console.log("Fetching All Selected Employees");
-      if (dataLoadingStatus.employees) return; // Prevent duplicate API calls
-
-      try {
-        setLoading(true);
-        setDataLoadingStatus((prev) => ({ ...prev, employees: true }));
-        const response = await axios.get(`${server}/api/data/employees`);
-        const selectedEmployees = response.data.employees.filter(
-          (employee: any) => employee.Is_Selected === true
-        );
-        console.log("Selected Employee data:", selectedEmployees);
-        setEmployees(selectedEmployees);
-        setError(null);
-
-        // Only show success toast if there was previously an error
-        // to avoid too many success messages
-        if (error) {
-          setTimeout(() => {
-            toast.success("Data refreshed", {
-              description: "Employee data retrieved successfully",
-              duration: 3000,
-            });
-          }, 300);
-        }
-      } catch (error) {
-        console.error("Error fetching employees:", error);
-        setError("Failed to load employee data");
-        toast.error("Failed to load data", {
-          description: "Could not retrieve employee data. Please try again later.",
-          id: "employees-error", // ID prevents duplicate toasts
-          duration: 5000,
-        });
-      } finally {
-        setLoading(false);
-        setIsLoaded(true);
-        setDataLoadingStatus((prev) => ({ ...prev, employees: false }));
-      }
-    };
     fetchAllEmployees();
-
-    const fetchTodaysConv = async () => {
-      console.log("Fetching Todays Conv:");
-      if (dataLoadingStatus.reports) return; // Prevent duplicate API calls
-
-      try {
-        setLoading(true);
-        setDataLoadingStatus((prev) => ({ ...prev, reports: true }));
-        const response = await axios.get(
-          `${server}/api/conversation/todays_reports`
-        );
-        setEmployeesWithReports(response.data);
-        setError(null);
-
-        // Success toast is shown only if there was an error previously
-        if (error) {
-          setTimeout(() => {
-            toast.success("Reports refreshed", {
-              description: "Today's conversation reports retrieved successfully",
-              duration: 3000,
-            });
-          }, 600); // Add delay to prevent overlapping with other toasts
-        }
-      } catch (error) {
-        console.error("Error fetching employees with reports:", error);
-        setError("Failed to load employee data");
-        toast.error("Failed to load reports", {
-          description: "Could not retrieve today's conversation reports. Please try again later.",
-          id: "reports-error", // ID prevents duplicate toasts
-          duration: 5000,
-        });
-      } finally {
-        setLoading(false);
-        setIsLoaded(true);
-        setDataLoadingStatus((prev) => ({ ...prev, reports: false }));
-      }
-    };
     fetchTodaysConv();
-  }, [error]); // Re-run when error state changes, allowing refreshes after errors
+  }, []); // Run once on component mount
+
+  // Function to regenerate reports for a specific employee
+  const regenerateReport = async (employeeId: string) => {
+    if (dataLoadingStatus.generating) return; // Prevent duplicate API calls
+    
+    try {
+      setDataLoadingStatus((prev) => ({ ...prev, generating: true }));
+      
+      // Show loading toast
+      toast.loading(`Generating report for employee ${employeeId}...`, { id: `report-gen-${employeeId}` });
+      
+      // API call to regenerate the report
+      const response = await axios.post(`${server}/api/conversation/regenerate_report`, {
+        employee_id: employeeId
+      });
+      
+      // Dismiss loading toast and show success
+      toast.dismiss(`report-gen-${employeeId}`);
+      toast.success("Report generated", {
+        description: `New report for employee ${employeeId} has been created`,
+        duration: 3000,
+      });
+      
+      // Refresh the reports data
+      fetchTodaysConv();
+    } catch (error) {
+      console.error("Error regenerating report:", error);
+      
+      // Dismiss loading toast and show error
+      toast.dismiss(`report-gen-${employeeId}`);
+      toast.error("Report generation failed", {
+        description: "Unable to generate a new report. Please try again.",
+        duration: 5000,
+      });
+    } finally {
+      setDataLoadingStatus((prev) => ({ ...prev, generating: false }));
+    }
+  };
+
+  // Function to refresh all data
+  const refreshAllData = () => {
+    toast.loading("Refreshing dashboard data...", { id: "refresh-all" });
+    
+    // Set a timeout to simulate loading and prevent UI flashing
+    setTimeout(() => {
+      Promise.all([fetchAllEmployees(), fetchTodaysConv()])
+        .then(() => {
+          toast.dismiss("refresh-all");
+          toast.success("Data refreshed", {
+            description: "All dashboard data has been updated",
+            duration: 3000,
+          });
+        })
+        .catch(() => {
+          toast.dismiss("refresh-all");
+          toast.error("Refresh failed", {
+            description: "Could not update all dashboard data",
+            duration: 5000,
+          });
+        });
+    }, 500);
+  };
 
   const selectedStats = employees.reduce(
     (acc, employee) => {
@@ -168,6 +262,21 @@ const HRDashboard: React.FC = () => {
 
       <main className="flex-1 transition-all duration-300 ease-in-out overflow-y-auto hr-custom-scrollbar">
         <div className="p-6 space-y-8">
+          {/* Header with refresh button */}
+          <div className="flex justify-between items-center">
+            <h1 className="text-3xl font-bold text-white">HR Dashboard</h1>
+            <Button 
+              onClick={refreshAllData} 
+              variant="outline" 
+              size="sm"
+              className="flex items-center gap-2 bg-transparent border border-[#26890d]/50 text-[#26890d] hover:bg-[#26890d]/10"
+              disabled={dataLoadingStatus.employees || dataLoadingStatus.reports}
+            >
+              <RefreshCw size={16} className={dataLoadingStatus.employees || dataLoadingStatus.reports ? "animate-spin" : ""} />
+              Refresh Data
+            </Button>
+          </div>
+
           {/* Analytics Section */}
           <div id="analytics-section" ref={analyticsRef} className="space-y-6">
             <h2 className="text-2xl font-bold text-[#26890d] mb-4 flex items-center gap-2">
@@ -243,6 +352,8 @@ const HRDashboard: React.FC = () => {
                   searchQuery={searchQuery}
                   employees={employees}
                   employeesWithReports={employeesWithReports}
+                  onRegenerateReport={regenerateReport}
+                  isGenerating={dataLoadingStatus.generating}
                 />
               )}
             </div>
