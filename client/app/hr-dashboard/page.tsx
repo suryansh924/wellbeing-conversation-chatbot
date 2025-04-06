@@ -6,7 +6,12 @@ import { HRBarChart } from "@/components/hr/BarChart";
 import { HRPieChart } from "@/components/hr/PieChart";
 import { Sidebar } from "@/components/hr/Sidebar";
 import { EmployeeReports } from "@/components/hr/EmployeeReports";
-import { BarChart as BarChartIcon, FileText, Search, RefreshCw } from "lucide-react";
+import {
+  BarChart as BarChartIcon,
+  FileText,
+  Search,
+  RefreshCw,
+} from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
@@ -56,7 +61,7 @@ const HRDashboard: React.FC = () => {
     const checkAuth = async () => {
       setLoading(true);
       toast.loading("Verifying HR credentials...", { id: "auth-check" });
-      
+
       try {
         const profile = await fetchHRProfile();
         if (!check_role("hr")) {
@@ -71,7 +76,7 @@ const HRDashboard: React.FC = () => {
         }
         toast.dismiss("auth-check");
         toast.success("Welcome to HR Dashboard", {
-          description: `Logged in as ${profile?.name || "HR Manager"}`,
+          description: `Logged in as HR Manager`,
           duration: 3000,
         });
       } catch (error) {
@@ -86,7 +91,7 @@ const HRDashboard: React.FC = () => {
         setLoading(false);
       }
     };
-    
+
     checkAuth();
   }, []);
 
@@ -97,10 +102,10 @@ const HRDashboard: React.FC = () => {
     try {
       setLoading(true);
       setDataLoadingStatus((prev) => ({ ...prev, employees: true }));
-      
+
       // Show loading toast
       toast.loading("Loading employee data...", { id: "employees-loading" });
-      
+
       const response = await axios.get(`${server}/api/data/employees`);
       const selectedEmployees = response.data.employees.filter(
         (employee: any) => employee.Is_Selected === true
@@ -118,11 +123,12 @@ const HRDashboard: React.FC = () => {
     } catch (error) {
       console.error("Error fetching employees:", error);
       setError("Failed to load employee data");
-      
+
       // Dismiss loading toast and show error
       toast.dismiss("employees-loading");
       toast.error("Failed to load data", {
-        description: "Could not retrieve employee data. Please try again later.",
+        description:
+          "Could not retrieve employee data. Please try again later.",
         id: "employees-error", // ID prevents duplicate toasts
         duration: 5000,
       });
@@ -140,10 +146,10 @@ const HRDashboard: React.FC = () => {
     try {
       setLoading(true);
       setDataLoadingStatus((prev) => ({ ...prev, reports: true }));
-      
+
       // Show loading toast
       toast.loading("Loading today's reports...", { id: "reports-loading" });
-      
+
       const response = await axios.get(
         `${server}/api/conversation/todays_reports`
       );
@@ -159,11 +165,12 @@ const HRDashboard: React.FC = () => {
     } catch (error) {
       console.error("Error fetching employees with reports:", error);
       setError("Failed to load employee data");
-      
+
       // Dismiss loading toast and show error
       toast.dismiss("reports-loading");
       toast.error("Failed to load reports", {
-        description: "Could not retrieve today's conversation reports. Please try again later.",
+        description:
+          "Could not retrieve today's conversation reports. Please try again later.",
         id: "reports-error", // ID prevents duplicate toasts
         duration: 5000,
       });
@@ -182,30 +189,35 @@ const HRDashboard: React.FC = () => {
   // Function to regenerate reports for a specific employee
   const regenerateReport = async (employeeId: string) => {
     if (dataLoadingStatus.generating) return; // Prevent duplicate API calls
-    
+
     try {
       setDataLoadingStatus((prev) => ({ ...prev, generating: true }));
-      
+
       // Show loading toast
-      toast.loading(`Generating report for employee ${employeeId}...`, { id: `report-gen-${employeeId}` });
-      
-      // API call to regenerate the report
-      const response = await axios.post(`${server}/api/conversation/regenerate_report`, {
-        employee_id: employeeId
+      toast.loading(`Generating report for employee ${employeeId}...`, {
+        id: `report-gen-${employeeId}`,
       });
-      
+
+      // API call to regenerate the report
+      const response = await axios.post(
+        `${server}/api/conversation/regenerate_report`,
+        {
+          employee_id: employeeId,
+        }
+      );
+
       // Dismiss loading toast and show success
       toast.dismiss(`report-gen-${employeeId}`);
       toast.success("Report generated", {
         description: `New report for employee ${employeeId} has been created`,
         duration: 3000,
       });
-      
+
       // Refresh the reports data
       fetchTodaysConv();
     } catch (error) {
       console.error("Error regenerating report:", error);
-      
+
       // Dismiss loading toast and show error
       toast.dismiss(`report-gen-${employeeId}`);
       toast.error("Report generation failed", {
@@ -220,7 +232,7 @@ const HRDashboard: React.FC = () => {
   // Function to refresh all data
   const refreshAllData = () => {
     toast.loading("Refreshing dashboard data...", { id: "refresh-all" });
-    
+
     // Set a timeout to simulate loading and prevent UI flashing
     setTimeout(() => {
       Promise.all([fetchAllEmployees(), fetchTodaysConv()])
@@ -265,14 +277,23 @@ const HRDashboard: React.FC = () => {
           {/* Header with refresh button */}
           <div className="flex justify-between items-center">
             <h1 className="text-3xl font-bold text-white">HR Dashboard</h1>
-            <Button 
-              onClick={refreshAllData} 
-              variant="outline" 
+            <Button
+              onClick={refreshAllData}
+              variant="outline"
               size="sm"
               className="flex items-center gap-2 bg-transparent border border-[#26890d]/50 text-[#26890d] hover:bg-[#26890d]/10"
-              disabled={dataLoadingStatus.employees || dataLoadingStatus.reports}
+              disabled={
+                dataLoadingStatus.employees || dataLoadingStatus.reports
+              }
             >
-              <RefreshCw size={16} className={dataLoadingStatus.employees || dataLoadingStatus.reports ? "animate-spin" : ""} />
+              <RefreshCw
+                size={16}
+                className={
+                  dataLoadingStatus.employees || dataLoadingStatus.reports
+                    ? "animate-spin"
+                    : ""
+                }
+              />
               Refresh Data
             </Button>
           </div>

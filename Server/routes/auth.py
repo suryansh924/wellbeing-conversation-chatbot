@@ -76,7 +76,6 @@ def verify_user(token: str):
     """
     try:
         db=next(get_db())
-        token= token.split(" ")[1]  # Extract token from "Bearer <token>"
         decoded_claims = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         emp_id = decoded_claims.get("emp_id")
         hr_id = decoded_claims.get("hr_email")
@@ -84,10 +83,11 @@ def verify_user(token: str):
             user= db.query(Master).filter(Master.employee_id == emp_id).first()
             if not user:
                 raise HTTPException(status_code=401, detail="Invalid token")
-            return {"user_type": "employee", "user_id": emp_id}
+            return {"user_type": "employee", "user_id": user.employee_id}
         
         if hr_id:
-            return {"user_type": "hr", "user_id": hr_id}
+            hr = db.query(HRUser).filter(HRUser.email == hr_id).first()
+            return {"user_type": "hr", "user_id": hr.email}
         
         raise HTTPException(status_code=401, detail="Invalid token")
         
@@ -210,8 +210,8 @@ def get_employee(authorization: str = Header(..., convert_underscores=False), db
     """
     try:
         token = authorization.split(" ")[1] 
-        user_data = verify_user(token, db)  
-        emp_id = user_data["emp_id"]
+        user_data = verify_user(token)  
+        emp_id = user_data["user_id"]
         user = db.query(Master).filter(Master.employee_id == emp_id).first()
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
@@ -258,9 +258,9 @@ def verify_hr(token: str, db: Session = Depends(get_db)) -> dict:
 def get_hr(authorization: str = Header(...), db: Session = Depends(get_db)):
     try:
         token = authorization.split(" ")[1]
-        print(token)
-        hr_email = verify_hr(token)["hr_email"]
-        hr = db.query(HRUser).filter(HRUser.email == hr_email).first()
+        hr_data = verify_user(token)
+        hr_id = hr_data["user_id"]
+        hr = db.query(HRUser).filter(HRUser.email == hr_id).first()
         if not hr:
             raise HTTPException(status_code=404, detail="User not found")
         return hr

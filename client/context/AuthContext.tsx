@@ -78,8 +78,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           typeof window !== "undefined" && localStorage.getItem("access_token");
         if (token) {
           setIsLogged(true);
-          const decoded = JSON.parse(atob(token.split('.')[1])); 
-          console.log("Fetching HR Profile Based on role :",decoded.role)
+          const decoded = JSON.parse(atob(token.split(".")[1]));
+          console.log("Fetching HR Profile Based on role :", decoded.role);
           if (decoded.role === "hr") {
             await fetchHRProfile();
           } else if (decoded.role === "employee") {
@@ -95,21 +95,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     fetchData();
   }, []);
 
-  const check_role = (role:string) => {
-    const token = localStorage.getItem('access_token');
+  const check_role = (role: string) => {
+    const token = localStorage.getItem("access_token");
     if (!token) return false;
     try {
-      const decoded = JSON.parse(atob(token.split('.')[1])); 
-      if (decoded.role === role ) {
-        return true; 
+      const decoded = JSON.parse(atob(token.split(".")[1]));
+      if (decoded.role === role) {
+        return true;
       }
       return false;
     } catch (error) {
       console.error("Invalid token:", error);
-      return false; 
+      return false;
     }
-  }
-  
+  };
+
   const signIn = async (email: string, password: string) => {
     const userCredential = await signInWithEmailAndPassword(
       auth,
@@ -160,7 +160,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const data = await response.json();
       localStorage.setItem("access_token", data.token);
-      localStorage.setItem("user_role", data.role);
       setIsLogged(true);
       // await fetchHRProfile();
       return data;
@@ -180,7 +179,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        credentials: "include",
+        credentials: "same-origin",
       });
 
       if (!response.ok) {
@@ -225,7 +224,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
     setIsLogged(false);
     localStorage.removeItem("access_token");
-    localStorage.removeItem("user_role");
     router.push("/");
   };
 
