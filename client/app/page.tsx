@@ -30,8 +30,8 @@ const Index: React.FC = () => {
   }, []);
 
   // Calculate opacity and transform values based on scroll position
-  const gradientOpacity = Math.max(0, Math.min(1, 1 - scrollY / 600));
-  const transformValue = `translateY(${Math.min(scrollY * 0.2, 100)}px)`;
+  // const gradientOpacity = Math.max(0, Math.min(1, 1 - scrollY / 600));
+  // const transformValue = `translateY(${Math.min(scrollY * 0.2, 100)}px)`;
 
   // Show full-screen loader while loading
   if (isLoading) {
@@ -47,15 +47,14 @@ const Index: React.FC = () => {
           backgroundImage: "url('/assets/Gradient.png')",
           backgroundSize: "cover",
           backgroundPosition: "center",
-          opacity: gradientOpacity,
-          transform: transformValue,
+          // opacity: gradientOpacity,
+          // transform: transformValue,
         }}
       />
 
       {/* Content container */}
-      <div className="max-w-[1440px] relative mx-auto px-6">
-        <nav className="flex justify-between items-center py-6 z-10">
-          <div className="flex items-center gap-2 w-full max-w-[1170px] mx-auto justify-between z-10">
+      <div className="max-w-[1440px] relative mx-auto ">
+        <nav className="flex justify-between items-center py-6 z-10 px-6">
             <div className="flex items-center gap-2">
               <div className="h-10 w-10 bg-white/10 backdrop-blur-lg rounded-full flex items-center justify-center">
                 <div className="h-4 w-4 rounded-full bg-gradient-to-br from-[#00805A] to-[#86BC25]"></div>
@@ -65,56 +64,14 @@ const Index: React.FC = () => {
               </span>
             </div>
 
-            <div className="hidden md:flex items-center gap-10">
-              <a
-                href="#features"
-                className="text-white/90 hover:text-white text-base font-medium"
-              >
-                Features
-              </a>
-              <a
-                href="#usecases"
-                className="text-white/90 hover:text-white text-base font-medium"
-              >
-                Usecases
-              </a>
-              <a
-                href="#pricing"
-                className="text-white/90 hover:text-white text-base font-medium"
-              >
-                Pricing
-              </a>
-              <a
-                href="#changelog"
-                className="text-white/90 hover:text-white text-base font-medium"
-              >
-                Changelog
-              </a>
-              <a
-                href="#customers"
-                className="text-white/90 hover:text-white text-base font-medium"
-              >
-                Customers
-              </a>
-            </div>
-
-            <Button
-              variant="outline"
-              className="bg-white text-black hover:bg-white/90 rounded-full px-6 cursor-pointer"
-              onClick={() => setSignInModalVisible(true)}
-            >
-              Sign up
-            </Button>
-          </div>
         </nav>
 
-        <main className="flex flex-col min-h-screen vertical-align-middle gap-16 max-md:flex-col ml-20">
+        <main className="flex flex-col min-h-screen vertical-align-middle gap-16 max-md:flex-col ml-4 sm:ml-20 p-3">
           <div className="flex justify-between items-center gap-16 pt-0 pb-10 max-md:flex-col min-h-[80vh]">
-            <div className="flex flex-col items-start gap-8 max-w-[497px] z-10">
-              <h1 className="text-[88px] font-normal leading-[88px] tracking-[-5.28px] text-white max-md:text-[64px] max-sm:text-5xl">
-                Professional
-                <br />
-                <span className="text-gradient-white">Gradients</span>
+            <div className="flex flex-col items-start gap-8 max-w-[497px] z-10 sm:gap-3">
+              <h1 className="flex flex-row text-[88px] font-normal  tracking-[-1.28px] text-white max-md:text-[64px] max-sm:text-3xl sm:tracking-[-5.28px] sm:flex-col">
+                <div>Professional</div>
+                <div className="ml-2">Gradients</div>
               </h1>
               <p className="text-white/95 text-xl leading-[30px] font-medium max-md:text-lg max-sm:text-base">
                 Elevate your HR team with MoodPulse – an intelligent chatbot
@@ -139,9 +96,9 @@ const Index: React.FC = () => {
           </div>
         </main>
 
-        <footer className="py-16 border-t border-white/10">
+        <footer className="px-5 py-16 border-t border-white/10">
           <div className="max-w-[1170px] mx-auto">
-            <div className="flex flex-col md:flex-row justify-between gap-10">
+            <div className="mx flex flex-col md:flex-row justify-between gap-10">
               <div className="flex flex-col gap-6">
                 <div className="flex items-center gap-2">
                   <div className="h-8 w-8 bg-white/10 backdrop-blur-lg rounded-full flex items-center justify-center">
@@ -160,7 +117,7 @@ const Index: React.FC = () => {
               <div className="grid grid-cols-2 md:grid-cols-3 gap-10"></div>
             </div>
 
-            <div className="mt-16 pt-6 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div className="mt-16  pt-6 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-4">
               <p className="text-white/50 text-sm">
                 © 2023 MoodPulse. All rights reserved.
               </p>

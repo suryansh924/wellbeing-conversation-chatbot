@@ -57,6 +57,11 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
       setIsHidden(false);
     }
   }, [collapsed, isMobile]);
+  
+//   useEffect(() => {
+//   setIsHidden(false); // Never hide on mobile
+// }, [collapsed, isMobile]);
+ 
 
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
@@ -70,7 +75,30 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
       onToggle();
     }
   };
+  useEffect(() => {
+    const sectionIds = ["analytics-section", "reports-section", "upload-data-section"];
   
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visibleSection = entries.find((entry) => entry.isIntersecting);
+        if (visibleSection?.target?.id) {
+          setActiveSection(visibleSection.target.id);
+        }
+      },
+      {
+        root: null,
+        rootMargin: "0px",
+        threshold: 0.6, // 60% of section should be visible
+      }
+    );
+  
+    sectionIds.forEach((id) => {
+      const element = document.getElementById(id);
+      if (element) observer.observe(element);
+    });
+  
+    return () => observer.disconnect();
+  }, []);
   const { logout } = useAuth();
 
   return (

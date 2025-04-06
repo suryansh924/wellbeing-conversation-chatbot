@@ -9,7 +9,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Button, AnimatedButton } from "@/components/ui/button";
+import {  AnimatedButton } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/context/AuthContext";
@@ -95,7 +95,7 @@ export default function HRLoginModal() {
   const loginSchema = z.object({
     email: z.string().regex(/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/).max(50),
     password: z.string().regex(
-      /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$/,
+      /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{6,}$/,
       "Password must contain at least 8 characters, including letters, numbers, and special characters"
     ).max(20),
   });
@@ -155,7 +155,7 @@ export default function HRLoginModal() {
       {/* Trigger button to open the modal */}
       <DialogTrigger asChild>
         <AnimatedButton
-          className="bg-white border-1 border-black/50 text-black cursor-pointer text-lg font-semibold px-10 py-4 h-auto rounded-full shadow-md hover:shadow-lg hover:bg-white/95 hover:border-black/90 transition-all duration-300 group relative overflow-hidden"
+          className="bg-white border-1 border-black/50 text-black cursor-pointer text-lg font-semibold px-10 py-4 h-auto rounded-full shadow-md hover:shadow-lg hover:bg-white/95 hover:border-black/90 transition-all duration-300 group relative overflow-hidden scale-75 sm:scale-100"
         >
           Login as HR
         </AnimatedButton>
