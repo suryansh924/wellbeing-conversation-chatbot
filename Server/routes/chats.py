@@ -34,7 +34,7 @@ class StartConversationRequest(BaseModel):
     shap: List[str]
 
 class MessageRequest(BaseModel):
-    conversation_id:str
+    conversation_id:int
     message:str
     message_type:str
     chat_history: List[Dict[str, str]]
@@ -57,7 +57,7 @@ async def start_conversation(request: Request, db: Session = Depends(get_db)):
         if role != "employee":
             raise HTTPException(status_code=401, detail="Unauthorized access")
         system_prompt="You are a friendly and professional HR assistant designed to check in on employees in a warm and concise manner. Always keep the tone polite, supportive, and under 2 lines."
-        user_prompt="The employee's name is {user.employee_name}. Greet her and let her know this is a regular check-in to see how she’s doing today. Keep it short and caring."
+        user_prompt=f"The employee's name is {user.employee_name}. Greet her and let her know this is a regular check-in to see how she’s doing today. Keep it short and caring."
         greeting_message = chat_with_gpt4o(system_prompt,user_prompt)
         new_message = Message(
             content=greeting_message,
@@ -118,7 +118,7 @@ async def send_message(request:Request,db: Session = Depends(get_db)):
         
         # Get the relevant questions based on the user's SHAP values
         relevant_questions = []
-        if data.relevant_questions==[]:
+        if data.question_set==[]:
             question_set = []
             selected_questions = {}
             for topic in user.shap_values:
@@ -132,12 +132,16 @@ async def send_message(request:Request,db: Session = Depends(get_db)):
             relevant_questions=retrieve_relevant_questions(user_summary,question_set)
         else:
             relevant_questions=data.question_set
-        
+        # print("Relevant Questions:",relevant_questions)
+        # print("User SHAP Values:",user.shap_values)
+        # print("User Summary:",user_summary)
+        # print("Message_Type:",data.message_type)
         if data.message_type=="welcome":
             # question_set
             
             generated_message,message_type=chatbot_conversation(user.shap_values,[],"",data.message_type,relevant_questions)
             # Store the AI response in `Message` table
+            print("Generated Message:",generated_message)
             chatbot_message = Message(
                 content=generated_message,
                 sender_type="chatbot",
@@ -169,10 +173,11 @@ async def send_message(request:Request,db: Session = Depends(get_db)):
             for msg in chat_history
         ])
 
-        generated_message,message_type=chatbot_conversation(user.shap_values,chat_history_text,data.message,data.message_type,question_set)
+        generated_message,message_type=chatbot_conversation(user.shap_values,chat_history_text,data.message,data.message_type,relevant_questions)
         # generated_message = generated_message(selected_questions,chat_history_text, data.message)
 
         # Store the AI response in `Message` table
+        print("Generated Message:",generated_message)
         chatbot_message = Message(
             content=generated_message,
             sender_type="chatbot",
@@ -190,7 +195,7 @@ async def send_message(request:Request,db: Session = Depends(get_db)):
         return {
             "chatbot_response": generated_message,
             "message_type":message_type,
-            "question_set": question_set
+            "question_set": relevant_questions
         }
 
     except Exception as e:
@@ -302,7 +307,7 @@ def get_insights(conversation_id: int, request:Request,db: Session = Depends(get
         emp_id,role=user_data["emp_id"],user_data["role"]
         if role != "employee":
             raise HTTPException(status_code=401, detail="Unauthorized access")
-        
+        user=db.query(Master).filter(Master.employee_id == emp_id).first()
         conversation = db.query(Conversation).filter(Conversation.id == conversation_id).first()
 
         if not conversation:
@@ -348,6 +353,10 @@ def get_insights(conversation_id: int, request:Request,db: Session = Depends(get
         conversation.message_ids.append(chatbot_message.id)
         db.commit()
         db.refresh(conversation)
+
+        user.conversation_completed=True
+        db.commit()
+        db.refresh(user)
 
         # 6. Return the insights
         return {

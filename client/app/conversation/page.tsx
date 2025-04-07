@@ -353,15 +353,21 @@ export default function ConversationPage() {
           // console.log("employee_name:", employee_name);
           // console.log("employee_name:", employee_id);
           // console.log("Conversation_id:", conversationId);
-
+          console.log("Chat history:", chat_history);
+          console.log("Selected Questions:", selectedQuestions);
+          console.log("Message_type:", message_type);
+          console.log("Input Value:", inputValue);
+          console.log("Conversation ID:", conversationId);
+        
+          
           const response = await axios.post(
             `${server}/api/conversation/message`,
             {
               // employee_name: employee_name,
               // employee_id: employee_id,
               // shap: shap,
-              message:inputValue,
-              conversation_id: conversationId,
+              message:inputValue||"",
+              conversation_id: conversationId || localStorage.getItem("conversation_id"),
               // last message type,
               message_type: message_type,
               chat_history: chat_history,

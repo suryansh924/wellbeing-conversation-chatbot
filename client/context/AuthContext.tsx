@@ -31,6 +31,7 @@ export interface Employee {
   sentimental_score: number;
   shap_values: string[];
   is_Flagged: boolean;
+  conversation_completed: boolean;
 }
 
 export interface HRUser {
@@ -83,7 +84,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (decoded.role === "hr") {
             await fetchHRProfile();
           } else if (decoded.role === "employee") {
-            await fetchEmployeeProfile();
+            const profile=await fetchEmployeeProfile();
+            console.log("Employee Profile:", profile);
+            
+            if(profile.is_selected && profile.conversation_completed){
+              router.push("/conversation");
+            }
+            else router.push("/dashboard");
+            
           }
         }
       } catch (error) {
@@ -172,7 +180,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const fetchEmployeeProfile = async () => {
     try {
       const token = localStorage.getItem("access_token");
-      console.log(token);
+      // console.log(token);
       const response = await fetch("http://127.0.0.1:8000/api/user/employee", {
         method: "GET",
         headers: {

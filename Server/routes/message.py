@@ -10,12 +10,12 @@ import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 from groq import Groq
 from langchain_huggingface import HuggingFaceEmbeddings
-import question_bank
+from question_bank import question_bank
 import random
 from chatgpt import chat_with_gpt4o
 
 # Download the required data file
-nltk.download('punkt_tab')
+# nltk.download('punkt_tab')
 
 # # Tokenize each question separately and combine the results
 asked_questions = set()
@@ -26,6 +26,7 @@ def retrieve_relevant_questions(user_query, questions_set, top_k=20):
     # print("System Prompt Applied:")
     # print(system_prompt)
     try:
+        nltk.download('punkt_tab')
         embeddings = HuggingFaceEmbeddings(
             model_name="sentence-transformers/all-MiniLM-L6-v2", encode_kwargs={"normalize_embeddings": True})
         documents = []
@@ -145,24 +146,37 @@ def select_next_question(chat_history, question_set):
 def chatbot_conversation(shap_values, chat_history, user_response, message_type, question_set):
     """Handles the chatbot conversation logic."""
 
-    # print("🤖: Hi! Let's start the conversation.")
+    print("🤖: Hi! Let's start the conversation.")
+    # print("Shap Values: ", shap_values)
+    # print("Chat History: ", chat_history)
+    # print("User Response: ", user_response)
+    # print("Message Type: ", message_type)
+
 
     # Start with the first question
+
     try:
         if message_type == "welcome":
+            # print("log")
             first_shap_value=next(iter(shap_values))
-            current_shap_questions = question_bank[first_shap_value]
+            # print("First Shap Value: ", first_shap_value)
+            current_shap_questions = question_bank[first_shap_value].get("questions", [])
         # chose a random
+            # print("Current Shap Questions: ", current_shap_questions)
             current_question = random.choice(current_shap_questions)
+            # print(f"🤖: {current_question}")
             asked_questions.add(current_question)
+            
             return current_question, "normal_question"
         # print(f"🤖: {current_question}")
 
         if message_type == "followup_1" or message_type == "normal_question":
+            print(f"User Response1: {user_response}")
             contradiction_follow_up = detect_contradiction(
-                user_response, chat_history, question_set)
+                user_response, chat_history)
 
             if contradiction_follow_up:
+                print(f"🤖: {contradiction_follow_up}")
                 asked_questions.add(contradiction_follow_up)
                 if message_type == "normal_question":
                     return contradiction_follow_up, "followup_1"
@@ -170,7 +184,9 @@ def chatbot_conversation(shap_values, chat_history, user_response, message_type,
                     return contradiction_follow_up, "followup_2"
             else:
                 # Generate 2 follow-up questions
+                print(f"User Response2: {user_response}")
                 follow_up_question = generate_follow_up(user_response)
+                print(f"🤖: {follow_up_question}")
                 if message_type == "normal_question":
                     return follow_up_question, "followup_1"
                 elif message_type == "followup_1":

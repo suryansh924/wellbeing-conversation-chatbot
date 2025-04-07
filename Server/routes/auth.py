@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends, Header
+from fastapi import APIRouter, HTTPException, Depends, Header, Request
 from sqlalchemy.orm import Session
 from datetime import timedelta
 # import firebase_admin
@@ -206,12 +206,12 @@ def register(user: RegisterUser, db: Session = Depends(get_db)):
 
 
 @router.get("/employee")
-def get_employee(authorization: str = Header(..., convert_underscores=False), db: Session = Depends(get_db)):
+def get_employee(request:Request,db: Session = Depends(get_db)):
     """
     Fetches the employee details using the token.
     """
     try:
-        token = authorization.split(" ")[1] 
+        token = request.headers["Authorization"]
         user_data = verify_user(token)  
         emp_id = user_data["emp_id"]
         user = db.query(Master).filter(Master.employee_id == emp_id).first()
@@ -235,26 +235,26 @@ def hr_login(request: HRLoginRequest, db: Session = Depends(get_db)):
     return {"token": token, "role": "hr"}
 
 
-def verify_hr(token: str, db: Session = Depends(get_db)) -> dict:
-    """
-    Verifies the JWT and returns the decoded claims.
-    """
-    try:
+# def verify_hr(token: str, db: Session = Depends(get_db)) -> dict:
+#     """
+#     Verifies the JWT and returns the decoded claims.
+#     """
+#     try:
 
-        decoded_claims = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+#         decoded_claims = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
 
-        hr_email = decoded_claims.get("hr_email")
-        role = decoded_claims.get("role")
+#         hr_email = decoded_claims.get("hr_email")
+#         role = decoded_claims.get("role")
 
-        if not hr_email or not role:
-            raise HTTPException(status_code=401, detail="Invalid token payload")
+#         if not hr_email or not role:
+#             raise HTTPException(status_code=401, detail="Invalid token payload")
 
-        return {"hr_email": hr_email, "role": role}
+#         return {"hr_email": hr_email, "role": role}
 
-    except jwt.ExpiredSignatureError:
-        raise HTTPException(status_code=401, detail="Token has expired")
-    except jwt.JWTError:
-        raise HTTPException(status_code=401, detail="Invalid token")
+#     except jwt.ExpiredSignatureError:
+#         raise HTTPException(status_code=401, detail="Token has expired")
+#     except jwt.JWTError:
+#         raise HTTPException(status_code=401, detail="Invalid token")
 
 @router.get("/hr")
 def get_hr(authorization: str = Header(...), db: Session = Depends(get_db)):
