@@ -141,6 +141,9 @@ export default function ConversationPage() {
   const startConv = async () => {
     // console.log("Starting Conversation");
     try {
+      // Show typing indicator while waiting for the first message
+      setIsTyping({ isActive: true });
+      
       const response = await axios.get(`${server}/api/conversation/start`, {
         headers: {
           "Content-Type": "application/json",
@@ -153,6 +156,9 @@ export default function ConversationPage() {
 
       setConversationId(data.conversation_id);
       // setSelectedQuestions(data.selected_questions);
+      
+      // Hide typing indicator after receiving the response
+      setIsTyping({ isActive: false });
 
       setMessages([
         {
@@ -165,6 +171,9 @@ export default function ConversationPage() {
       ]);
       return;
     } catch (error) {
+      // Hide typing indicator in case of error
+      setIsTyping({ isActive: false });
+      
       console.error("Error starting conversation:", error);
       toast.error("Error", {
         description: "Failed to start the conversation. Please try again.",
