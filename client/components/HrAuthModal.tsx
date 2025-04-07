@@ -153,15 +153,14 @@ export default function HRLoginModal() {
       // Call the HR login function
       const response = await signInHR(LoginformData.email, LoginformData.password);
       if (response.token) {
-        // Dismiss loading toast and show success
+        // Dismiss loading toast
         toast.dismiss("hr-login-attempt");
-        toast.success("HR Login Successful", {
-          description: "Welcome back! Accessing HR dashboard...",
-        });
-
+        
+        // Close the modal after successful login
+        setOpen(false);
+        
         // Redirect to HR Dashboard on success
         router.push("/hr-dashboard");
-        setOpen(false); // Close the modal after successful login
       }
     } catch (err: any) {
       // Dismiss loading toast and show error

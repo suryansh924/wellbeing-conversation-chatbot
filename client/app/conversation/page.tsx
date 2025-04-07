@@ -125,16 +125,20 @@ export default function ConversationPage() {
       // setMaxQuestions(TotalQuestions - questionsAsked - 1);
       console.log(maxQuestions);
       setMessages(formattedMessages);
-      // setConversationId(lastConversation.id);
+      
+      // Add just one toast notification with unique ID
       toast.success("Conversation Resumed", {
-        description: "Your previous conversation has been loaded successfully",
+        description: "You're continuing your previous conversation.",
+        id: "conversation-resumed", // Add unique ID to prevent duplicate toasts
       });
+      
       // return true;
       // } else return false;
     } catch (error) {
       console.error("Error fetching conversations:", error);
       toast.error("Error", {
         description: "Failed to check for incomplete conversations",
+        id: "failed-fetch-conversations" // Add unique ID for error toast
       });
       return false;
     }
@@ -179,6 +183,7 @@ export default function ConversationPage() {
       console.error("Error starting conversation:", error);
       toast.error("Error", {
         description: "Failed to start the conversation. Please try again.",
+        id: "conversation-start-failed"
       });
     }
   };
@@ -300,6 +305,7 @@ export default function ConversationPage() {
       console.error("Error providing insights:", error);
       toast.error("Error", {
         description: "Failed to generate insights. Please try again later.",
+        id: "insights-error"
       });
     }
   };
@@ -327,6 +333,7 @@ export default function ConversationPage() {
       toast.error("Error", {
         description:
           "Failed to generate your wellbeing report. Please try again later.",
+          id: "error-type"
       });
     }
   };
@@ -420,6 +427,7 @@ export default function ConversationPage() {
           toast.error("Connection Error", {
             description:
               "Failed to send your message. Please check your connection and try again.",
+            id: "send-message-connection-error"
           });
           setIsTyping({ isActive: false });
           setIsLoading(false);
@@ -508,6 +516,7 @@ export default function ConversationPage() {
       toast.error("Transcription Error", {
         description:
           "Failed to transcribe your voice. Please try typing instead.",
+        id: "transcription-error"
       });
     } finally {
       setIsAudioProcessing(false);
