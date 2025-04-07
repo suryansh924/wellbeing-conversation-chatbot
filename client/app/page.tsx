@@ -88,8 +88,7 @@ const Index: React.FC = () => {
             <div className="flex-1 max-w-[650px] relative z-0">
               <div className="flex w-full h-[650px] flex-col justify-between items-center border bg-[rgba(0,0,0,0.8)] p-4 rounded-3xl border-[rgba(255,255,255,0.12)] overflow-hidden shadow-2xl">
                 <div className="flex w-full h-full items-start bg-[rgba(30,30,30,0.9)] rounded-2xl overflow-hidden">
-                  {/* You can add an inline loader here if content is loading */}
-                  {/* {contentLoading && <div className="p-4"><Loader size="small" /></div>} */}
+                  <img src="/dashboard-preview.jpg" alt="Analytics Dashboard" className="w-full h-full object-cover rounded-2xl" />
                 </div>
               </div>
             </div>

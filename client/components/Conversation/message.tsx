@@ -10,13 +10,14 @@ type MessageProps = {
   content: string;
   isUser: boolean;
   timestamp: Date;
-  msg_type:string;
+  msg_type: string;
 };
 
-function Message({ id, content, isUser, timestamp,msg_type}: MessageProps) {
+function Message({ id, content, isUser, timestamp, msg_type = "" }: MessageProps) {
   const audioPlayerRef = React.useRef<HTMLAudioElement>(null);
   const [isSpeakerOn, setIsSpeakerOn] = React.useState(false);
   const [audioUrl, setAudioUrl] = React.useState<string | null>(null);
+  const [isLoading, setIsLoading] = React.useState(!isUser && content === "");
 
   const SpeakAloud = async () => {
     setIsSpeakerOn(true);
@@ -78,7 +79,17 @@ function Message({ id, content, isUser, timestamp,msg_type}: MessageProps) {
             } `}
           >
             <div className="w-full flex wrap break-all">
-            {content}
+              {!isUser && (content === "" || isLoading) ? (
+                <div className="flex items-center">
+                  <div className="typing-indicator">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                  </div>
+                </div>
+              ) : (
+                content
+              )}
             </div>
             <div className="flex justify-between items-center mt-1">
               <div className="text-xs opacity-70 text-right">
