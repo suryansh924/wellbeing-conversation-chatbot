@@ -10,9 +10,10 @@ type MessageProps = {
   content: string;
   isUser: boolean;
   timestamp: Date;
+  msg_type:string;
 };
 
-function Message({ id, content, isUser, timestamp }: MessageProps) {
+function Message({ id, content, isUser, timestamp,msg_type}: MessageProps) {
   const audioPlayerRef = React.useRef<HTMLAudioElement>(null);
   const [isSpeakerOn, setIsSpeakerOn] = React.useState(false);
   const [audioUrl, setAudioUrl] = React.useState<string | null>(null);

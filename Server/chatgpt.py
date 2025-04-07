@@ -9,17 +9,18 @@ load_dotenv()
 client = OpenAI()
 client.api_key = os.getenv("OPENAI_API_KEY")
 
-def chat_with_gpt4o(prompt):
+def chat_with_gpt4o(system_prompt, user_prompt):
     """Generates a response from GPT-4o."""
     try:
         response = client.chat.completions.create(
             model="gpt-4o",
             messages=[
-                {"role": "system", "content": "You are an empathetic, supportive, and proactive digital HR assistant dedicated to improving employee well-being and engagement."},
-                {"role": "user", "content": prompt}
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+                # {"role": "user", "content": prompt}
             ],
             max_tokens=1000,
-            temperature=0.7
+            temperature=0.8
         )
 
         # Access the response using dot notation

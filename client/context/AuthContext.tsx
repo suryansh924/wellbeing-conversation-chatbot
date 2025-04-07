@@ -96,7 +96,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const check_role = (role:string) => {
-    const token = localStorage.getItem('access_token');
+    const token = typeof window !== "undefined" && localStorage.getItem("access_token");
     if (!token) return false;
     try {
       const decoded = JSON.parse(atob(token.split('.')[1])); 

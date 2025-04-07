@@ -19,6 +19,7 @@ interface Message {
   content: string;
   isUser: boolean;
   timestamp: Date;
+  msg_type: string; // normal_question, followup_1, followup_2, insights, welcome, user_msg
 }
 
 interface TypingIndicator {
@@ -26,7 +27,7 @@ interface TypingIndicator {
 }
 
 export default function ConversationPage() {
-  const server = "http://127.0.0.1:8000";
+  // const server = "http://127.0.0.1:8000";
 
   const TotalQuestions = 6;
 
@@ -35,7 +36,11 @@ export default function ConversationPage() {
   const [employee_name, setEmployee_Name] = useState("");
   const [employee_id, setEmployee_Id] = useState("");
   const [shap, setShap] = useState<string[]>([]);
-  const [conversationId, setConversationId] = useState<string | null>(null);
+  const [conversationId, setConversationId] = useState<string | null>(
+    typeof window !== "undefined"
+      ? localStorage.getItem("conversation_id")
+      : null
+  );
   const [selectedQuestions, setSelectedQuestions] = useState<string[]>([]);
 
   const [maxQuestions, setMaxQuestions] = useState(TotalQuestions);
@@ -63,6 +68,9 @@ export default function ConversationPage() {
   const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
   const [isAudioProcessing, setIsAudioProcessing] = useState(false);
   const [hasEnded, setHasEnded] = useState(false);
+  const token =
+    typeof window !== "undefined" && localStorage.getItem("access_token");
+  const [message_type, setMessageType] = useState<string>("welcome");
 
   useEffect(() => {
     try {
@@ -78,51 +86,49 @@ export default function ConversationPage() {
 
   const checkForIncompleteConv = async () => {
     try {
-      if (employeeData) {
-        console.log("employee id is:", employeeData.employee_id);
-      } else {
-        console.log("employeeData is null");
-      }
-      const response = await axios.get(
-        `http://127.0.0.1:8000/api/conversation/history/employee/${employeeData.employee_id}`
+      // console.log(employeeData?.employee_id);
+
+      const conv_id = localStorage.getItem("conversation_id");
+
+      // if (lastConversation.date === new Date().toISOString().split("T")[0]) {
+      const messagesResponse = await axios.get(
+        `${server}/api/conversation/history/${conv_id}`,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
       );
 
-      const conversations = response.data.conversations;
-      if (!conversations || conversations.length === 0) return false;
-
-      const lastConversation = conversations.slice(-1)[0]; // Get the last element of the array
-
-      if (lastConversation.date === new Date().toISOString().split("T")[0]) {
-        const messagesResponse = await axios.get(
-          `http://127.0.0.1:8000/api/conversation/history/${lastConversation.id}`
-        );
-
-        // Transform the message format
-        let questionsAsked = 0;
-        const formattedMessages: Message[] = messagesResponse.data.map(
-          (msg: any) => {
-            if (msg.sender_type === "chatbot") {
-              questionsAsked++; // Count chatbot messages
-            }
-            return {
-              id: msg.id.toString(),
-              content: msg.content,
-              isUser: msg.sender_type === "employee", // isUser is true if the sender is an employee
-              timestamp: new Date(), // You might need to add the actual timestamp from the API if available
-            };
+      // Transform the message format
+      let questionsAsked = 0;
+      const formattedMessages: Message[] = messagesResponse.data.map(
+        (msg: any) => {
+          if (msg.sender_type === "chatbot") {
+            if (msg.message_type === "normal_question") 
+            {questionsAsked++; }// Count chatbot messages
+            setMessageType(msg.message_type);
           }
-        );
-        console.log("questions Asked:", questionsAsked - 1);
-        setMaxQuestions(TotalQuestions - questionsAsked - 1);
-        console.log(maxQuestions);
-        setMessages(formattedMessages);
-        setConversationId(lastConversation.id);
-        toast.success("Conversation Resumed", {
-          description:
-            "Your previous conversation has been loaded successfully",
-        });
-        return true;
-      } else return false;
+          return {
+            id: msg.id.toString(),
+            content: msg.content,
+            isUser: msg.sender_type === "employee", // isUser is true if the sender is an employee
+            timestamp: msg.time,
+            msg_type: msg.message_type,
+          };
+        }
+      );
+      console.log("questions Asked:", questionsAsked - 1);
+      setMaxQuestions(TotalQuestions - questionsAsked - 1);
+      console.log(maxQuestions);
+      setMessages(formattedMessages);
+      // setConversationId(lastConversation.id);
+      toast.success("Conversation Resumed", {
+        description: "Your previous conversation has been loaded successfully",
+      });
+      // return true;
+      // } else return false;
     } catch (error) {
       console.error("Error fetching conversations:", error);
       toast.error("Error", {
@@ -133,26 +139,20 @@ export default function ConversationPage() {
   };
 
   const startConv = async () => {
-    console.log("Starting Conversation");
+    // console.log("Starting Conversation");
     try {
-      const response = await axios.post(
-        `${server}/api/conversation/start`,
-        {
-          employee_name: employeeData?.employee_name,
-          employee_id: employeeData?.employee_id,
-          shap: shap,
+      const response = await axios.get(`${server}/api/conversation/start`, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
-        {
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      });
       const data = response.data;
-      console.log("On Conv Page", data);
+      // console.log("On Conv Page",data);
+      localStorage.setItem("conversation_id", data.conversation_id);
 
       setConversationId(data.conversation_id);
-      setSelectedQuestions(data.selected_questions);
+      // setSelectedQuestions(data.selected_questions);
 
       setMessages([
         {
@@ -160,6 +160,7 @@ export default function ConversationPage() {
           content: data.chatbot_response,
           isUser: false,
           timestamp: new Date(),
+          msg_type: "welcome",
         },
       ]);
       return;
@@ -172,11 +173,21 @@ export default function ConversationPage() {
   };
 
   const handleCheckForIncompleteConv = async () => {
-    const res = await checkForIncompleteConv(); // Wait for the promise to resolve
-    console.log("CheckIncompleteConv: ", res); // Log the result of checkForIncompleteConv
+    // const res = await checkForIncompleteConv();  // Wait for the promise to resolve
+    // console.log("CheckIncompleteConv: ", res);  // Log the result of checkForIncompleteConv
 
-    if (!res) {
-      startConv(); // Only call startConv if res is falsy (or whatever condition you have)
+    // if (!res) {
+    //   startConv();  // Only call startConv if res is falsy (or whatever condition you have)
+    // }
+    const conv_id =
+      typeof window !== "undefined"
+        ? localStorage.getItem("conversation_id")
+        : null;
+    if (conv_id) {
+      await checkForIncompleteConv();
+    } else {
+      await startConv();
+      await handleSendMessage();
     }
   };
 
@@ -185,8 +196,7 @@ export default function ConversationPage() {
       console.log("Setting employee data from auth context:", employeeData);
       setEmployee_Id(employeeData.employee_id);
       setEmployee_Name(employeeData.employee_name);
-      setShap(employeeData.shap_values);
-
+      // setShap(employeeData.shap_values);
       handleCheckForIncompleteConv();
     }
   }, [employeeData]);
@@ -254,11 +264,13 @@ export default function ConversationPage() {
 
   const provideInsights = async () => {
     try {
+      // const 
       const response = await axios.get(
         `${server}/api/conversation/insights/${conversationId}`,
         {
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
           },
         }
       );
@@ -269,6 +281,7 @@ export default function ConversationPage() {
         content: data.insights,
         isUser: false,
         timestamp: new Date(),
+        msg_type: "insights",
       };
 
       setMessages((prev) => [...prev, botMessage]);
@@ -282,22 +295,16 @@ export default function ConversationPage() {
 
   const generateReport = async () => {
     try {
-      const shapValues: { [key: string]: number } = {};
-      shap.forEach((key) => {
-        shapValues[key] = 0.01;
-      });
-
-      console.log(shapValues);
+      // console.log(shapValues);
 
       const response = await axios.post(
         `${server}/api/report/employee`,
         {
           conversation_id: conversationId,
-          employee_id: employee_id,
-          shap_values: shapValues,
         },
         {
           headers: {
+            Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
         }
@@ -315,18 +322,25 @@ export default function ConversationPage() {
 
   const handleSendMessage = async () => {
     setIsLoading(true);
-
+    const chat_history=messages.map((msg) => {
+      return {
+        sender_type: msg.isUser ? "employee" : "chatbot",
+        message: msg.content,
+      };
+    })
     if (inputValue.trim()) {
       const userMessage: Message = {
         id: `user-${Date.now()}`,
         content: inputValue,
         isUser: true,
         timestamp: new Date(),
+        msg_type: "user_msg",
       };
       setMessages((prev) => [...prev, userMessage]);
       setInputValue("");
+    }
 
-      console.log("Chat history", chatHistory);
+      // console.log("Chat history", chatHistory);
 
       // Show typing indicator with green dots matching the brand color
       setIsTyping({ isActive: true });
@@ -335,31 +349,48 @@ export default function ConversationPage() {
         "Thank you for your time! The conversation is now over. Here are few insights for your improvement...";
       if (maxQuestions != 0) {
         try {
-          console.log("Posting message for Employee:");
-          console.log("employee_name:", employee_name);
-          console.log("employee_name:", employee_id);
-          console.log("Conversation_id:", conversationId);
+          // console.log("Posting message for Employee:");
+          // console.log("employee_name:", employee_name);
+          // console.log("employee_name:", employee_id);
+          // console.log("Conversation_id:", conversationId);
 
           const response = await axios.post(
             `${server}/api/conversation/message`,
             {
-              employee_name: employee_name,
-              employee_id: employee_id,
-              shap: shap,
-              message: inputValue,
+              // employee_name: employee_name,
+              // employee_id: employee_id,
+              // shap: shap,
+              message:inputValue,
               conversation_id: conversationId,
-              selected_questions: selectedQuestions,
-              chat_history: chatHistory,
+              // last message type,
+              message_type: message_type,
+              chat_history: chat_history,
+              question_set: selectedQuestions,
             },
             {
               headers: {
                 "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
               },
             }
           );
           const data = await response.data;
-          setChatHistory(data.chat_history);
+          // setChatHistory(data.chat_history);
+
           chatbot_response = data.chatbot_response;
+          setIsTyping({ isActive: false });
+          setSelectedQuestions(data.question_set);
+          setMessageType(data.message_type);
+
+          const botMessage: Message = {
+            id: `bot-${Date.now()}`,
+            content: chatbot_response,
+            msg_type: data.message_type,
+            isUser: false,
+            timestamp: new Date(),
+          };
+
+          setMessages((prev) => [...prev, botMessage]);
 
           setMaxQuestions(maxQuestions - 1);
           console.log(maxQuestions);
@@ -375,32 +406,14 @@ export default function ConversationPage() {
       } else {
         setHasEnded(true);
       }
-
-      setTimeout(() => {
-        setIsTyping({ isActive: false });
-
-        const botMessage: Message = {
-          id: `bot-${Date.now()}`,
-          content: chatbot_response,
-          isUser: false,
-          timestamp: new Date(),
-        };
-
-        setMessages((prev) => [...prev, botMessage]);
-
-        if (isSpeakerOn) {
-          const speech = new SpeechSynthesisUtterance(botMessage.content);
-          window.speechSynthesis.speak(speech);
-        }
-        if (maxQuestions <= 0) {
-          provideInsights();
-          generateReport();
-        }
-        setIsLoading(false);
-      }, 500);
-    } else {
+      if (maxQuestions <= 0) {
+        provideInsights();
+        generateReport();
+      }
       setIsLoading(false);
-    }
+    // } else {
+    //   setIsLoading(false);
+    // }
   };
 
   const startRecording = async () => {
@@ -514,6 +527,7 @@ export default function ConversationPage() {
               content={message.content}
               isUser={message.isUser}
               timestamp={message.timestamp}
+              msg_type={message.msg_type}
             />
           ))}
 
@@ -565,7 +579,10 @@ export default function ConversationPage() {
           <div className=" fixed bottom-4 right-4 z-10">
             <Button
               className="bg-black text-white hover:bg-gray-800"
-              onClick={() => router.push("/dashboard")}
+              onClick={() => {
+                localStorage.removeItem("conversation_id"),
+                  router.push("/dashboard");
+              }}
             >
               Back to Dashboard
             </Button>

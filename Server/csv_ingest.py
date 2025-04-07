@@ -59,6 +59,33 @@ def parse_shap_features(feature_string: str) -> Dict[str, Any]:
     
     return features
 
+def parse_shap_nature(feature_string: str) -> Dict[str, Any]:
+    """Parse SHAP feature string into dictionary"""
+    features = {}
+    if not feature_string:
+        return features
+    
+    # This regex matches feature names and their values in parentheses
+    pattern = r'([A-Za-z_]+)\(([^)]+)\)'
+    matches = re.findall(pattern, feature_string)
+    
+    for feature_name, value in matches:
+        # Optional: Trim any extra whitespace
+        feature_name = feature_name.strip()
+        value = value.strip()
+        try:
+            # Log the feature name and value (or remove after debugging)
+            # Convert to float if it contains a dot, otherwise int
+            if value==1:
+                features[feature_name] = "POSITIVE"
+            elif value==-1:
+                features[feature_name] = "NEGATIVE"
+        except ValueError:
+            # If conversion fails, keep as string
+            features[feature_name] = value
+    
+    return features
+
 
 def ingest_csv_data(file_content: bytes, table: str, db: Session):
     """
@@ -80,32 +107,49 @@ def ingest_csv_data(file_content: bytes, table: str, db: Session):
 
             shap_str = row.get("shap_values", "")
             shap_list = parse_shap_values(shap_str)
+            shap_nature=row.get("shap_nature", "")
+            shap_nature_list = parse_shap_nature(shap_nature)
 
-            employee = Master(
-                employee_id=row.get("employee_id"),
-                shap_values=shap_list,
-                # employee_name=row.get("employee_name", ""),
-                # employee_email=row.get("employee_email"),
-                # password=hash_password(row.get("password")),
-                feature_vector= row.get("feature_vector", []),
-                # role=row.get("role", "employee"),
-                # report=row.get("report", ""),
-                sentimental_score=parse_int(row.get("sentimental_score", "0")),
-                # is_resolved=parse_bool(row.get("is_resolved", "false")),
+            # employee = Master(
+            #     employee_id=row.get("employee_id"),
+            #     shap_values=shap_list,
+            #     shap_nature=shap_nature_list,
+            #     # employee_name=row.get("employee_name", ""),
+            #     # employee_email=row.get("employee_email"),
+            #     # password=hash_password(row.get("password")),
+            #     # feature_vector= row.get("feature_vector", []),
+            #     is_selected=row.get("should_reach_out")=="TRUE",
+            #     # role=row.get("role", "employee"),
+            #     # report=row.get("report", ""),
+            #     # sentimental_score=parse_int(row.get("sentimental_score", "0")),
+            #     # is_resolved=parse_bool(row.get("is_resolved", "false")),
 
-                # work_hours=parse_float(row.get("work_hours", "0.0")),
-                # leave_days=parse_int(row.get("leave_days", "0")),
-                # leave_type=row.get("leave_type", ""),
-                # performance_rating=parse_int(row.get("performance_rating", "0")),
-                # manager_feedback=row.get("manager_feedback", ""),
-                # promotion_consideration=parse_bool(row.get("promotion_consideration", "false")),
-                # reward_points=parse_int(row.get("reward_points", "0")),
-                # award_type=row.get("award_type", ""),
-                # team_messages_sent=parse_int(row.get("team_messages_sent", "0")),
-                # vibe_score=parse_int(row.get("vibe_score", "0"))
-            )
-            db.add(employee)
-            records.append(employee)
+            #     # work_hours=parse_float(row.get("work_hours", "0.0")),
+            #     # leave_days=parse_int(row.get("leave_days", "0")),
+            #     # leave_type=row.get("leave_type", ""),
+            #     # performance_rating=parse_int(row.get("performance_rating", "0")),
+            #     # manager_feedback=row.get("manager_feedback", ""),
+            #     # promotion_consideration=parse_bool(row.get("promotion_consideration", "false")),
+            #     # reward_points=parse_int(row.get("reward_points", "0")),
+            #     # award_type=row.get("award_type", ""),
+            #     # team_messages_sent=parse_int(row.get("team_messages_sent", "0")),
+            #     # vibe_score=parse_int(row.get("vibe_score", "0"))
+            # )
+            # employee_id=row.get("employee_id")
+            user=db.query(Master).filter(Master.employee_id == employee_id).first()
+            if user:
+                # Update existing record
+                user.shap_values = shap_list
+                user.shap_nature = shap_nature_list
+                user.is_selected=row.get("should_reach_out")=="TRUE"
+                # user.feature_vector=row.get("feature_vector", [])
+                # user.employee_name=row.get("employee_name", "")
+                # user.employee_email=row.get("employee_email")
+            db.commit()
+            db.refresh(user)
+            records.append(user)
+
+            
     elif table == "hr":
         for row in reader:
             row = {key.lower(): value for key, value in row.items()}

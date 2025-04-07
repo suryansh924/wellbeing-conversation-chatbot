@@ -1,6 +1,7 @@
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column, Integer, String, Boolean, Text, JSON, Float,Date, Time
 from sqlalchemy.ext.mutable import MutableList, MutableDict
+from datetime import datetime
 
 Base = declarative_base()
 
@@ -14,8 +15,8 @@ class Master(Base):
     feature_vector = Column(MutableList.as_mutable(JSON), default=[])      # Default: empty list.
     is_selected = Column(Boolean, default=False)                        # Default: not selected for conversation.
     shap_values = Column(MutableList.as_mutable(JSON), default=[])      # Default: empty list.
-    new_shap_values = Column(MutableDict.as_mutable(JSON), default={})      # Default: empty list.
-    report = Column(Text, default="")                                   # Default: empty string.
+    shap_nature = Column(MutableDict.as_mutable(JSON), default={})      # Default: empty list.
+    # report = Column(Text, default="")                                   # Default: empty string.
     sentimental_score = Column(Integer, default=0)                      # Default: 0.
     is_Flagged = Column(Boolean, default=False)                        # Default: not resolved.
     role = Column(String, default="employee")                           # Default: "employee".
@@ -37,7 +38,7 @@ class HRUser(Base):
     
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String, unique=True, index=True, nullable=False)
-    password = Column(String, nullable=False)                           # Hashed password.
+    # password = Column(String, nullable=False)                           # Hashed password.
     role = Column(String, default="admin")                              # Default: "admin".  
     daily_report= Column(String, default="")                  # Default: empty string.
 
@@ -49,8 +50,8 @@ class Conversation(Base):
     employee_id = Column(String, nullable=False)         # Reference to Employee.id.
     employee_name = Column(String, nullable=False)
     message_ids = Column(MutableList.as_mutable(JSON), default=[])  # List of message IDs.
-    date = Column(Date, nullable=True)                 # Date of conversation
-    time = Column(Time, nullable=True)                 # Time of conversation
+    date= Column(Date, nullable=False, default=lambda: datetime.now().date())
+    time= Column(Time, nullable=False, default=lambda: datetime.now().time())
     report = Column(Text, nullable = True)
 
 class Message(Base):
@@ -60,6 +61,12 @@ class Message(Base):
     # conv_id = Column(Integer, nullable=False)
     content = Column(Text, nullable=False)
     sender_type = Column(String, nullable=False)  # "assistant" or "user"
+    #data and time should automatically be added when a message is sent
+    message_type=Column(String,nullable=False) # normal_question, followup_1, followup_2, insights, welcome, user_msg
+    date = Column(Date, nullable=False, default=lambda: datetime.now().date())
+    time = Column(Time, nullable=False, default=lambda: datetime.now().time())
+
+
     
 # class Message(Base):
 #     __tablename__ = "messages"

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends, File, UploadFile, Form
+from fastapi import APIRouter, HTTPException, Depends, File, UploadFile, Form, Request
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 import requests
@@ -14,6 +14,8 @@ from chatgpt import chat_with_gpt4o
 import httpx
 import io
 from fastapi.responses import StreamingResponse
+from .auth import verify_user
+from .message import chatbot_conversation,retrieve_relevant_questions,generate_user_summary
 
 
 from database.models import Conversation,Message, Master
@@ -32,113 +34,149 @@ class StartConversationRequest(BaseModel):
     shap: List[str]
 
 class MessageRequest(BaseModel):
-    employee_name: str
-    employee_id:str
-    shap: List[str]
-    message: str
-    conversation_id:int
-    selected_questions:List[str]
-    chat_history:List[Dict[str, str]]
+    conversation_id:str
+    message:str
+    message_type:str
+    chat_history: List[Dict[str, str]]
+    question_set: List[str] 
 
 
 class PromptRequest(BaseModel):
     prompt: str
 
 
-@router.post("/start")
-async def start_conversation(request: StartConversationRequest, db: Session = Depends(get_db)):
-    greeting_prompt = f"Generate a greeting message for {request.employee_name} and ask his/her vibe of today."
-    greeting_message = chat_with_gpt4o(greeting_prompt)
-    gemini_message = Message(
-        content=greeting_message,
-        sender_type="chatbot"
-    )
-    db.add(gemini_message)
-    db.commit()
-    db.refresh(gemini_message)
+@router.get("/start")
+async def start_conversation(request: Request, db: Session = Depends(get_db)):
+    try:
+        token=request.headers.get("Authorization")
+        if not token:
+            raise HTTPException(status_code=401, detail="Unauthorized")
+        user_data=verify_user(token)
+        emp_id,role=user_data["emp_id"],user_data["role"]
+        user=db.query(Master).filter(Master.employee_id == emp_id).first()
+        if role != "employee":
+            raise HTTPException(status_code=401, detail="Unauthorized access")
+        system_prompt="You are a friendly and professional HR assistant designed to check in on employees in a warm and concise manner. Always keep the tone polite, supportive, and under 2 lines."
+        user_prompt="The employee's name is {user.employee_name}. Greet her and let her know this is a regular check-in to see how she’s doing today. Keep it short and caring."
+        greeting_message = chat_with_gpt4o(system_prompt,user_prompt)
+        new_message = Message(
+            content=greeting_message,
+            sender_type="chatbot",
+            message_type="welcome"
+        )
+        db.add(new_message)
+        db.commit()
+        db.refresh(new_message)
 
-    # Pre-select the questions based on `shap` topics
-    selected_questions = []
-    for topic in request.shap:
-        if topic in question_bank:
-            selected_questions.extend(question_bank[topic])
+        # Pre-select the questions based on `shap` topics
+       
 
-    # if not selected_questions:
-    #     raise HTTPException(status_code=400, detail="No valid questions found for the given SHAP topics")
-    
-    now = datetime.now()
-    new_conversation = Conversation(
-        employee_id=request.employee_id,
-        employee_name=request.employee_name,
-        message_ids=[gemini_message.id],  # Store the message ID
-        date=now.date(),
-        time=now.time()
-    )
-    db.add(new_conversation)
-    db.commit()
-    db.refresh(new_conversation)
-    return {"chatbot_response":greeting_message , "conversation_id":new_conversation.id ,"selected_questions":selected_questions}   # Send the conversation id along with the message
+        # if not selected_questions:
+        #     raise HTTPException(status_code=400, detail="No valid questions found for the given SHAP topics")
+
+        # now = datetime.now()
+        new_conversation = Conversation(
+            employee_id=user.employee_id,
+            employee_name=user.employee_name,
+            message_ids=[new_message.id],  # Store the message ID
+            # date=now.date(),
+            # time=now.time()
+        )
+        db.add(new_conversation)
+        db.commit()
+        db.refresh(new_conversation)
+        return {"chatbot_response":greeting_message , "conversation_id":new_conversation.id}   # Send the conversation id along with the message
+    except:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Error starting conversation")
 
 
 
 @router.post("/message")
-async def send_message(request: MessageRequest, db: Session = Depends(get_db)):
+async def send_message(request:Request,db: Session = Depends(get_db)):
     """
     Accepts employee message, generates chatbot response, and appends both
     message IDs to the existing conversation using `conversation_id`.
     """
     try:
         # Retrieve existing conversation using `conversation_id`
-        conversation = db.query(Conversation).filter_by(id=request.conversation_id).first()
+        token=request.headers.get("Authorization")
+        if not token:
+            raise HTTPException(status_code=401, detail="Unauthorized")
+        user_data=verify_user(token)
+        emp_id,role=user_data["emp_id"],user_data["role"]
+        user=db.query(Master).filter(Master.employee_id == emp_id).first()
+        if role != "employee":
+            raise HTTPException(status_code=401, detail="Unauthorized access")
+        # how to get the body from the request in the form of MessageRequest
+        body = await request.json()
+        data = MessageRequest(**body)
+        conversation = db.query(Conversation).filter_by(id=data.conversation_id).first()
 
         if not conversation:
             raise HTTPException(status_code=404, detail="Conversation not found")
+        
+        # Get the relevant questions based on the user's SHAP values
+        relevant_questions = []
+        if data.relevant_questions==[]:
+            question_set = []
+            selected_questions = {}
+            for topic in user.shap_values:
+                if topic in question_bank:
+                    selected_questions.update({topic: question_bank[topic]})
+            for key, value in selected_questions.items():
+                # question_set.append(f"{key}: {value['description']}")
+                for i, question in enumerate(value['questions'], 1):
+                    question_set.append(f"{question}")
+            user_summary=generate_user_summary(user.shap_nature)
+            relevant_questions=retrieve_relevant_questions(user_summary,question_set)
+        else:
+            relevant_questions=data.question_set
+        
+        if data.message_type=="welcome":
+            # question_set
+            
+            generated_message,message_type=chatbot_conversation(user.shap_values,[],"",data.message_type,relevant_questions)
+            # Store the AI response in `Message` table
+            chatbot_message = Message(
+                content=generated_message,
+                sender_type="chatbot",
+                message_type=message_type
+            )
+            db.add(chatbot_message)
+            db.commit()
+            db.refresh(chatbot_message)
+            return {
+                "chatbot_response": generated_message,
+                "message_type":message_type,
+                "question_set": question_set
+            }
 
         # Store the employee's message in `Message` table
         employee_message = Message(
-            content=request.message,
-            sender_type="employee"
+            content=data.message,
+            sender_type="employee",
+            message_type="user_msg"
         )
         db.add(employee_message)
         db.commit()
         db.refresh(employee_message)
 
         # Retrieve the chat-history
-        chat_history  = request.chat_history
+        chat_history  = data.chat_history
         chat_history_text = "\n".join([
             f"{msg['sender_type'].capitalize()}: {msg['message']}"
             for msg in chat_history
         ])
 
-        # Retrieve the pre-selected questions
-        questions = request.selected_questions
-        # if not questions:
-        #     raise HTTPException(status_code=404, detail="No pre-selected questions found")
-        question_text = "\n".join([f"- {q}" for q in questions])
-
-
-        # Generate AI's response
-        ai_prompt = f"""
-The employee's response is: {request.message} 
-
-- Based on this response, provide suggestionas and ask **ONLY ONE follow-up question** strictly from the question bank provided below.
-- **Your response MUST be Two sentences.**
-- **You are provided with your chat history with the employee**
-- **Understand the context of conversation from the chat history and you can tweak accordingly, the next question from the question bank.**
-- **STRICTLY follow the provided format**.
-- **After asking five-six questions, end the Conversation.
-
-### Your Chat History: {chat_history_text}
-
-### Question bank:
-{question_text}
-"""
-        generated_message = chat_with_gpt4o(ai_prompt)
+        generated_message,message_type=chatbot_conversation(user.shap_values,chat_history_text,data.message,data.message_type,question_set)
+        # generated_message = generated_message(selected_questions,chat_history_text, data.message)
 
         # Store the AI response in `Message` table
         chatbot_message = Message(
             content=generated_message,
-            sender_type="chatbot"
+            sender_type="chatbot",
+            message_type=message_type
         )
         db.add(chatbot_message)
         db.commit()
@@ -148,55 +186,71 @@ The employee's response is: {request.message}
         conversation.message_ids.append(employee_message.id)
         conversation.message_ids.append(chatbot_message.id)
         db.commit()
-
-        # Append current employee message to the chat history
-        chat_history.append({
-            "sender_type": "employee",
-            "message": request.message
-        })
-        # Append chatbot message to the chat history
-        chat_history.append({
-            "sender_type": "chatbot",
-            "message": generated_message
-        })        
+    
         return {
-            "ai_prompt":ai_prompt,
             "chatbot_response": generated_message,
-            "conversation_id": conversation.id,
-            "chat_history":chat_history
+            "message_type":message_type,
+            "question_set": question_set
         }
 
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
 
-@router.get("/history/employee/{employee_id}")
-def get_conversation_history(employee_id: str,db:Session = Depends(get_db)):
+@router.get("/history/employee")
+def get_conversation_history(request:Request,db:Session = Depends(get_db)):
     try:
-        conversations = db.query(Conversation).filter(Conversation.employee_id == employee_id).all()
+        token=request.headers.get("Authorization")
+        if not token:
+            raise HTTPException(status_code=401, detail="Unauthorized")
+        user_data=verify_user(token)
+        emp_id,role=user_data["emp_id"],user_data["role"]
+        # user=db.query(Master).filter(Master.employee_id == emp_id).first()
+        if role != "employee":
+            raise HTTPException(status_code=401, detail="Unauthorized access")
+        
+        conversations = db.query(Conversation).filter(Conversation.employee_id == emp_id).all()
         if not conversations:
             return []
-            raise HTTPException(status_code=404, detail="No conversations found for this employee ID")
+        return [
+            {
+                "conversation_id": conv.id,
+                # "employee_id": conv.employee_id,
+                # "employee_name": conv.employee_name,
+                "date": conv.date,
+                "time": conv.time,
+            } for conv in conversations
+        ]
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error fetcging the conversations: {str(e)}")
-    # Return the conversations
-    return {"conversations": conversations}
 
 
 @router.get("/history/{conversation_id}")
-def get_messages(conversation_id: int, db: Session = Depends(get_db)):  # Ensure ID is int if it's an integer column
+#how to get the token too
+def get_messages(conversation_id:str,request:Request,db:Session=Depends(get_db)):  # Ensure ID is int if it's an integer column
     try:
         # Fetch the conversation by ID
+        token=request.headers.get("Authorization")
+        if not token:
+            raise HTTPException(status_code=401, detail="Unauthorized")
+        user_data=verify_user(token)
+        emp_id,role=user_data["emp_id"],user_data["role"]
+        if role != "employee":
+            raise HTTPException(status_code=401, detail="Unauthorized access")
+        
         conversation = db.query(Conversation).filter(Conversation.id == conversation_id).first()
 
         if not conversation:
             raise HTTPException(status_code=404, detail="Conversation not found")
+        
+        if conversation.employee_id != emp_id:
+            raise HTTPException(status_code=403, detail="Unauthorized access to this conversation")
 
         # Fetch associated messages by their IDs
         messages = db.query(Message).filter(Message.id.in_(conversation.message_ids)).all()
 
         # Format the response
-        message_list = [{"id": msg.id, "content": msg.content, "sender_type": msg.sender_type} for msg in messages]
+        message_list = [{"id": msg.id, "content": msg.content, "sender_type": msg.sender_type,"time":msg.time,"message_type":msg.message_type} for msg in messages]
 
         return message_list
 
@@ -235,16 +289,27 @@ def fetch_todays_conv(db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/insights/{conversation_id}")
-def get_insights(conversation_id: int, db: Session = Depends(get_db)):
+def get_insights(conversation_id: int, request:Request,db: Session = Depends(get_db)):
     """
     Generate insights based on the entire conversation using Gemini.
     """
     try:
         # 1. Fetch the conversation by ID
+        token=request.headers.get("Authorization")
+        if not token:
+            raise HTTPException(status_code=401, detail="Unauthorized")
+        user_data=verify_user(token)
+        emp_id,role=user_data["emp_id"],user_data["role"]
+        if role != "employee":
+            raise HTTPException(status_code=401, detail="Unauthorized access")
+        
         conversation = db.query(Conversation).filter(Conversation.id == conversation_id).first()
 
         if not conversation:
             raise HTTPException(status_code=404, detail="Conversation not found")
+        
+        if conversation.employee_id != emp_id:
+            raise HTTPException(status_code=403, detail="Unauthorized access to this conversation")
 
         # 2. Fetch all messages associated with this conversation
         messages = db.query(Message).filter(Message.id.in_(conversation.message_ids)).all()
@@ -273,19 +338,19 @@ def get_insights(conversation_id: int, db: Session = Depends(get_db)):
 
         chatbot_message = Message(
             content=insights,
-            sender_type="chatbot"
+            sender_type="chatbot",
+            message_type="insight"
         )
         db.add(chatbot_message)
         db.commit()
         db.refresh(chatbot_message)
 
         conversation.message_ids.append(chatbot_message.id)
+        db.commit()
+        db.refresh(conversation)
 
         # 6. Return the insights
         return {
-            "conversation_id": conversation.id,
-            "employee_id": conversation.employee_id,
-            "employee_name": conversation.employee_name,
             "insights": insights
         }
 
@@ -339,66 +404,6 @@ async def transcribe_audio(audio: UploadFile = File(...)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error in speech-to-text: {str(e)}")
     
-
-
-
-# @app.post("/api/text-to-speech")
-# async def text_to_speech(request: TTSRequest):
-#     """
-#     Convert text to speech using Deepgram API
-    
-#     Takes text input and returns audio stream
-#     """
-#     try:
-#         # Set up the request payload for Deepgram API
-#         payload = {
-#             "text": request.text
-#         }
-        
-#         # Set up headers for Deepgram API request
-#         headers = {
-#             "Authorization": f"Token {DEEPGRAM_API_KEY}",
-#             "Content-Type": "application/json"
-#         }
-        
-#         # Make the request to Deepgram
-#         async with httpx.AsyncClient() as client:
-#             response = await client.post(
-#                 f"https://api.deepgram.com/v1/speak?model={request.model}",
-#                 headers=headers,
-#                 json=payload,
-#                 timeout=30.0
-#             )
-            
-#             # Check for successful response
-#             if response.status_code != 200:
-#                 error_message = f"Deepgram TTS API error: {response.status_code}"
-#                 try:
-#                     error_detail = response.json()
-#                     error_message += f" - {error_detail}"
-#                 except:
-#                     pass
-                
-#                 raise HTTPException(
-#                     status_code=response.status_code,
-#                     detail=error_message
-#                 )
-            
-#             # Return the audio stream
-#             return StreamingResponse(
-#                 io.BytesIO(response.content),
-#                 media_type="audio/mp3",
-#                 headers={
-#                     "Content-Disposition": f"attachment; filename=speech.mp3"
-#                 }
-#             )
-    
-#     except httpx.RequestError as e:
-#         raise HTTPException(status_code=500, detail=f"Error communicating with Deepgram: {str(e)}")
-#     except Exception as e:
-#         raise HTTPException(status_code=500, detail=f"Error processing text-to-speech: {str(e)}")   
-
-#the function will only have a string in the request body
 @router.post("/tts")
 async def text_to_speech(request: PromptRequest):
     """
@@ -424,7 +429,7 @@ async def text_to_speech(request: PromptRequest):
         # print("Sending request to Deepgram TTS API...",request.prompt)
         async with httpx.AsyncClient() as client:
             response = await client.post(
-                f"https://api.deepgram.com/v1/speak?model=aura-asteria-en",
+                f"https://api.deepgram.com/v1/speak?model=aura-asteria-en&gender=female",
                 headers=headers,
                 json=payload,
                 timeout=30.0

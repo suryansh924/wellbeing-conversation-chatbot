@@ -74,22 +74,24 @@ def verify_user(token: str):
     """
     Verifies the JWT and returns the decoded claims.
     """
+    db=next(get_db())
     try:
-        db=next(get_db())
         token= token.split(" ")[1]  # Extract token from "Bearer <token>"
         decoded_claims = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         emp_id = decoded_claims.get("emp_id")
-        hr_id = decoded_claims.get("hr_email")
-        if emp_id:
-            user= db.query(Master).filter(Master.employee_id == emp_id).first()
+        role = decoded_claims.get("role")
+        if role=="employee":
+            user = db.query(Master).filter(Master.employee_id == emp_id).first()
             if not user:
-                raise HTTPException(status_code=401, detail="Invalid token")
-            return {"user_type": "employee", "user_id": emp_id}
+                raise HTTPException(status_code=401, detail="Unauthorized")
+            return {"emp_id": emp_id, "role": role}
+        elif role=="hr":
+            user = db.query(HRUser).filter(HRUser.id == emp_id).first()
+            if not user:
+                raise HTTPException(status_code=401, detail="Unauthorized")
+            return {"emp_id": emp_id, "role": role}
         
-        if hr_id:
-            return {"user_type": "hr", "user_id": hr_id}
-        
-        raise HTTPException(status_code=401, detail="Invalid token")
+        raise HTTPException(status_code=401, detail="Unauthorized")
         
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Token has expired")
@@ -154,7 +156,7 @@ def oauth(user: OAuthUser, db: Session = Depends(get_db)):
         existing_employee.employee_email = user.email
         db.commit()
         db.refresh(existing_employee)
-        access_token = create_access_token(data={"emp_id": user.emp_id})
+        access_token= create_access_token(data={"emp_id": db_user.employee_id,"role":"employee"})
         return {"token": access_token}
 
 @router.get("/check/{employee_id}", response_model=EmployeeCheckResponse)
@@ -210,7 +212,7 @@ def get_employee(authorization: str = Header(..., convert_underscores=False), db
     """
     try:
         token = authorization.split(" ")[1] 
-        user_data = verify_user(token, db)  
+        user_data = verify_user(token)  
         emp_id = user_data["emp_id"]
         user = db.query(Master).filter(Master.employee_id == emp_id).first()
         if not user:
@@ -223,9 +225,9 @@ def get_employee(authorization: str = Header(..., convert_underscores=False), db
 @router.post("/hr-login")
 def hr_login(request: HRLoginRequest, db: Session = Depends(get_db)):
     hr_user = db.query(HRUser).filter(HRUser.email == request.email).first()
-    if not hr_user or hr_user.password != request.password:
+    if not hr_user:
         # Simple password check
-        raise HTTPException(status_code=400, detail="Invalid email or password")
+        raise HTTPException(status_code=400, detail="Invalid Creds")
 
     # Create the JWT token for the authenticated HR user
     token = create_access_token(data={"hr_email": hr_user.email,"role":"hr" })

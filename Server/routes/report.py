@@ -164,7 +164,7 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")  # Replace with your actual API key
 # Function to make API calls to OpenAI
 OPENAI_API_URL = "https://api.openai.com/v1/chat/completions"
 
-async def generate_content(system_prompt, user_prompt, model="gpt-4-turbo", temperature=0.4):
+async def generate_content(system_prompt, user_prompt, model="gpt-4o", temperature=0.4):
     try:
         response = await client.chat.completions.create(
             model=model,
@@ -354,7 +354,7 @@ async def generate_root_cause_analysis(conversation_transcript,shap_data, datase
     Format this as a professional analytical report with clear headings, rankings, and evidence-based conclusions and keep each subsection short. Overall keep the content very precise and short.
     """
     
-    return await generate_content(system_prompt, user_prompt, model="gpt-4-turbo", temperature=0.2)
+    return await generate_content(system_prompt, user_prompt, temperature=0.2)
 
 # Risk level assessment
 # Is the employee flaged
@@ -632,57 +632,67 @@ async def get_employee_report(request: Request,db: Session = Depends(get_db)):
     """
 
     # Extract token from Authorization header
-    token = request.headers.get("Authorization")
+    try:
+        token = request.headers.get("Authorization")
     # print(token)
     # Extract the body from the request
-    body= await request.json()
-    if not token:
-        raise HTTPException(status_code=401, detail="Missing authentication token")
+        body= await request.json()
+        if not token:
+            raise HTTPException(status_code=401, detail="Missing authentication token")
 
-    # Verify the token and extract employee_id
-    res = verify_user(token)
-    conversation_id= body.get("conversation_id")
-    if not conversation_id:
-        raise HTTPException(status_code=400, detail="Missing conversation ID")
-    if(res.get("user_type") != "employee"):
-        raise HTTPException(status_code=401, detail="Invalid token")
-    employee_id = res.get("user_id")
+        # Verify the token and extract employee_id
+        user_data = verify_user(token)
+        emp_id,role=user_data["emp_id"],user_data["role"]
+        conversation_id= body.get("conversation_id")
+        if not conversation_id:
+            raise HTTPException(status_code=400, detail="Missing conversation ID")
+        if(role != "employee"):
+            raise HTTPException(status_code=401, detail="Invalid token")
 
 
-    # Generate the report
-    # print(employee_id,conversation_id)
-    report = await generate_complete_employee_report(employee_id,conversation_id,db)
+        # Generate the report
+        # print(employee_id,conversation_id)
+        report = await generate_complete_employee_report(emp_id,conversation_id,db)
 
-    # return {"report":report}
+        # return {"report":report}
 
-    # Render the HTML template using Jinja2
-    env = Environment(loader=FileSystemLoader("templates"))
-    template = env.get_template("report_template.html")
-    html_content = template.render(report_data=report)
+        # Render the HTML template using Jinja2
+        env = Environment(loader=FileSystemLoader("templates"))
+        template = env.get_template("report_template.html")
+        html_content = template.render(report_data=report)
 
-    # Generate PDF with xhtml2pdf in-memory
-    pdf_file = BytesIO()
-    pisa_status = pisa.CreatePDF(html_content, dest=pdf_file)
+        # Generate PDF with xhtml2pdf in-memory
+        pdf_file = BytesIO()
+        pisa_status = pisa.CreatePDF(html_content, dest=pdf_file)
 
-    if pisa_status.err:
-        raise HTTPException(status_code=500, detail="Error generating PDF with xhtml2pdf")
+        if pisa_status.err:
+            raise HTTPException(status_code=500, detail="Error generating PDF with xhtml2pdf")
 
-    pdf_file.seek(0)  # Reset the buffer pointer
-    pdf_bytes = pdf_file.getvalue()
+        pdf_file.seek(0)  # Reset the buffer pointer
+        pdf_bytes = pdf_file.getvalue()
 
-    # S3 Upload
-    filename = f"report_{request.employee_id}_{request.conversation_id}.pdf"
-    s3_url = upload_pdf_to_s3(pdf_bytes, filename)
+        # S3 Upload
+        filename = f"report_{request.employee_id}_{request.conversation_id}.pdf"
+        s3_url = upload_pdf_to_s3(pdf_bytes, filename)
 
-    # Close PDF buffer
-    pdf_file.close()
-    conversation=db.query(Conversation).filter(Conversation.id == conversation_id).first()
-    if not conversation:
-        raise HTTPException(status_code=404, detail="Conversation not found")
-    conversation.report = s3_url
-    db.commit()
+        # Close PDF buffer
+        pdf_file.close()
+        conversation=db.query(Conversation).filter(Conversation.id == conversation_id).first()
+        if not conversation:
+            raise HTTPException(status_code=404, detail="Conversation not found")
+        conversation.report = s3_url
+        db.commit(conversation)
+        db.refresh()
 
-    return {"message": "PDF report uploaded successfully", "pdf_url": s3_url}
+        return {"message": "PDF report uploaded successfully", "pdf_url": s3_url}
+    except:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Error generating employee report")
+
+
+
+
+    
 
     
 
