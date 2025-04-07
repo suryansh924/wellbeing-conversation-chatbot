@@ -28,7 +28,6 @@
   --gradient-card: linear-gradient(160deg, var(--color-card) 0%, var(--color-hr-black) 100%);
   --gradient-glass: linear-gradient(135deg, rgba(23, 23, 23, 0.8) 0%, rgba(11, 11, 11, 0.9) 100%);
 }
-
 @layer base {
   :root {
     color-scheme: dark;
@@ -47,7 +46,6 @@
     @apply bg-card border border-border rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-transparent transition-all;
   }
 }
-
 @layer components {
   /* Cards */
   .glass-card {

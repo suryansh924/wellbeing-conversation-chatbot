@@ -260,9 +260,9 @@ def verify_hr(token: str, db: Session = Depends(get_db)) -> dict:
 def get_hr(authorization: str = Header(...), db: Session = Depends(get_db)):
     try:
         token = authorization.split(" ")[1]
-        print(token)
-        hr_email = verify_hr(token)["hr_email"]
-        hr = db.query(HRUser).filter(HRUser.email == hr_email).first()
+        hr_data = verify_user(token)
+        hr_id = hr_data["user_id"]
+        hr = db.query(HRUser).filter(HRUser.email == hr_id).first()
         if not hr:
             raise HTTPException(status_code=404, detail="User not found")
         return hr

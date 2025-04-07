@@ -73,11 +73,13 @@ function Message({ id, content, isUser, timestamp,msg_type}: MessageProps) {
           <div
             className={`px-4 py-3 rounded-lg ${
               isUser
-                ? "bg-green-900 text-white rounded-br-none"
+                ? "bg-[#26890d] text-white rounded-br-none"
                 : "bg-secondary text-foreground rounded-bl-none"
-            }`}
+            } `}
           >
+            <div className="w-full flex wrap break-all">
             {content}
+            </div>
             <div className="flex justify-between items-center mt-1">
               <div className="text-xs opacity-70 text-right">
                 {timestamp.toLocaleTimeString([], {
@@ -93,8 +95,8 @@ function Message({ id, content, isUser, timestamp,msg_type}: MessageProps) {
                   onClick={SpeakAloud}
                   className={`h-6 w-6 p-0 ml-2 rounded-full ${
                     isSpeakerOn
-                      ? "text-green-500"
-                      : "text-gray-400 hover:text-gray-600"
+                      ? "text-gray-400"
+                      : "text-gray-400 hover:text-white"
                   }`}
                   title={isSpeakerOn ? "Stop speaking" : "Speak message"}
                 >
@@ -111,7 +113,7 @@ function Message({ id, content, isUser, timestamp,msg_type}: MessageProps) {
         </div>
 
         {isUser && (
-          <Avatar className="h-10 w-10 ml-3">
+          <Avatar className="h-10 w-10 ml-3 ">
             <AvatarFallback>ME</AvatarFallback>
           </Avatar>
         )}

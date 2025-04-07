@@ -20,6 +20,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { FaTwitter } from "react-icons/fa";
 import { motion, AnimatePresence } from "framer-motion";
+import { toast } from "sonner"; // Import toast from sonner
 
 // Add this to your globals.css
 
@@ -101,7 +102,7 @@ export default function AuthModal() {
       password: z
         .string()
         .regex(
-          /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$/,
+          /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{6,}$/,
           "Password must contain at least 8 characters, including letters, numbers, and special characters"
         )
         .max(20),
@@ -219,6 +220,9 @@ export default function AuthModal() {
     if (result.success) {
       setLoading(true);
       try {
+        // Show loading toast
+        toast.loading("Logging in...", { id: "login-attempt" });
+
         await signIn(LoginformData.email, LoginformData.password);
         const res = await axios.post(
           "http://127.0.0.1:8000/api/user/login",
@@ -235,12 +239,25 @@ export default function AuthModal() {
         console.log(res);
         const token = res.data.token;
         localStorage.setItem("access_token", token);
-        localStorage.setItem("user_role", res.data.role);
         setIsLogged(true);
+
+        // Dismiss loading toast and show success
+        toast.dismiss("login-attempt");
+        toast.success("Login Successful", {
+          description: "Welcome back! Redirecting to your dashboard...",
+        });
+
         await handlePostAuth();
         setSignInModalVisible(false);
       } catch (err: unknown) {
         setError("Invalid Credentials");
+
+        // Dismiss loading toast and show error
+        toast.dismiss("login-attempt");
+        toast.error("Login Failed", {
+          description: "Invalid email or password. Please try again.",
+          id: "login-error",
+        });
       } finally {
         setLoading(false);
       }
@@ -264,7 +281,7 @@ export default function AuthModal() {
       if (!exists) {
         setError("Employee ID not found.");
       } else {
-        setRegisterStep("registerForm");
+    setRegisterStep("registerForm");
       }
     } catch {
       setError("Error checking employee ID. Please try again.");
@@ -297,7 +314,6 @@ export default function AuthModal() {
         );
         const token = res.data.token;
         localStorage.setItem("access_token", token);
-        localStorage.setItem("user_role", res.data.role);
         setIsLogged(true);
         await handlePostAuth();
         setSignInModalVisible(false);
@@ -340,7 +356,6 @@ export default function AuthModal() {
       });
       const token = res.data.token;
       localStorage.setItem("access_token", token);
-      localStorage.setItem("user_role", res.data.role);
       setIsLogged(true);
       await handlePostAuth();
       setSignInModalVisible(false);
@@ -366,7 +381,6 @@ export default function AuthModal() {
       });
       const token = res.data.token;
       localStorage.setItem("access_token", token);
-      localStorage.setItem("user_role", res.data.role);
       setIsLogged(true);
       await handlePostAuth();
       setSignInModalVisible(false);
@@ -410,13 +424,12 @@ export default function AuthModal() {
     <Dialog open={signInModalVisible} onOpenChange={handleOpenChange}>
       {/* Trigger button with hover animation */}
       <DialogTrigger asChild>
-        <AnimatedButton className="bg-black border border-white/50 text-white cursor-pointer text-lg font-semibold px-10 py-4 h-auto rounded-full shadow-md hover:shadow-lg hover:bg-[#0a0a0a] hover:border-white/60 group relative overflow-hidden">
-          {" "}
+        <AnimatedButton className="bg-black border border-white/50 text-white cursor-pointer text-lg font-semibold px-10 py-4 h-auto rounded-full shadow-md hover:shadow-lg hover:bg-[#0a0a0a] hover:border-white/60 group relative overflow-hidden scale-75 sm:scale-100">
           Get Started
         </AnimatedButton>
       </DialogTrigger>
 
-      <DialogContent className="sm:max-w-[425px] dark bg-[#131313] text-white border-none dialog-content p-0 overflow-hidden">
+      <DialogContent className="fixed sm:max-w-[425px] dark bg-[#131313] text-white border-none dialog-content top-5 p-0 ">
         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 to-teal-500"></div>
 
         <DialogHeader className="p-6 pb-2">

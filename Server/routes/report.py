@@ -199,15 +199,15 @@ async def generate_personal_details_section(employee_data={}, vibe_data={}, leav
     Employee Information:
     {json.dumps(employee_data, indent=2)}
 
-    {f'Vibe Meter Data:\n{json.dumps(vibe_data, indent=2)}' if vibe_data else ''}
+    {f'Vibe Meter Data: {json.dumps(vibe_data, indent=2)}' if vibe_data else ''}
 
-    {f'Leave Information:\n{json.dumps(leave_data, indent=2)}' if leave_data else ''}
+    {f'Leave Information:{json.dumps(leave_data, indent=2)}' if leave_data else ''}
 
-    {f'Performance Summary:\n{json.dumps(performance_data, indent=2)}' if performance_data else ''}
+    {f'Performance Summary:{json.dumps(performance_data, indent=2)}' if performance_data else ''}
 
-    {f'Rewards & Recognition:\n{json.dumps(rewards_data, indent=2)}' if rewards_data else ''}
+    {f'Rewards & Recognition:{json.dumps(rewards_data, indent=2)}' if rewards_data else ''}
 
-    {f'Activity Metrics:\n{json.dumps(activity_data, indent=2)}' if activity_data else ''}
+    {f'Activity Metrics: {json.dumps(activity_data, indent=2)}' if activity_data else ''}
     
     Format this as a professional HR report section titled "Personal Details" with appropriate subsections for each data category.
     Include the employee's current mood rating from the Vibe Meter data and keep each subsection pretty short. Overall keep the content very precise and short.
@@ -742,7 +742,6 @@ async def generate_report_content(report_data):
     5️⃣ **Number of Flagged Employees**: {report_data['num_flagged']} employees require follow-up action.
     
     **Next Steps**: Employees flagged as requiring attention should have a 1-on-1 meeting scheduled for further discussion.
-    
     Write a professional executive summary for this.
     """
 

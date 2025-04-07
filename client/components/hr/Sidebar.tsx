@@ -50,13 +50,18 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   }, []);
   
   // When in mobile mode, we want the sidebar to be either fully visible or fully hidden
+  // useEffect(() => {
+  //   if (isMobile) {
+  //     setIsHidden(collapsed);
+  //   } else {
+  //     setIsHidden(false);
+  //   }
+  // }, [collapsed, isMobile]);
+  
   useEffect(() => {
-    if (isMobile) {
-      setIsHidden(collapsed);
-    } else {
-      setIsHidden(false);
-    }
-  }, [collapsed, isMobile]);
+  setIsHidden(false); // Never hide on mobile
+}, [collapsed, isMobile]);
+ 
 
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
@@ -70,18 +75,41 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
       onToggle();
     }
   };
+  useEffect(() => {
+    const sectionIds = ["analytics-section", "reports-section", "upload-data-section"];
   
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visibleSection = entries.find((entry) => entry.isIntersecting);
+        if (visibleSection?.target?.id) {
+          setActiveSection(visibleSection.target.id);
+        }
+      },
+      {
+        root: null,
+        rootMargin: "0px",
+        threshold: 0.6, // 60% of section should be visible
+      }
+    );
+  
+    sectionIds.forEach((id) => {
+      const element = document.getElementById(id);
+      if (element) observer.observe(element);
+    });
+  
+    return () => observer.disconnect();
+  }, []);
   const { logout } = useAuth();
 
   return (
     <>
       {/* Mobile overlay backdrop when sidebar is open */}
-      {isMobile && !isHidden && (
+      {/* {isMobile && !isHidden && (
         <div 
           className="fixed inset-0 bg-black/50 z-40 lg:hidden"
           onClick={onToggle}
         />
-      )}
+      )} */}
     
       {/* Sidebar - positioned fixed on mobile, and relative on desktop */}
       <div
