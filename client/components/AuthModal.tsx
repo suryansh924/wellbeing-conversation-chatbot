@@ -424,7 +424,7 @@ export default function AuthModal() {
     <Dialog open={signInModalVisible} onOpenChange={handleOpenChange}>
       {/* Trigger button with hover animation */}
       <DialogTrigger asChild>
-        <AnimatedButton className="bg-black border border-white/50 text-white cursor-pointer text-lg font-semibold px-10 py-4 h-auto rounded-full shadow-md hover:shadow-lg hover:bg-[#0a0a0a] hover:border-white/60 group relative overflow-hidden scale-75 sm:scale-100">
+        <AnimatedButton className="bg-black border border-white/50 text-white cursor-pointer text-lg font-semibold px-10 py-4 h-auto rounded-full shadow-md hover:shadow-lg hover:bg-[#0a0a0a] hover:border-white/60 group relative overflow-hidden md:scale-90 lg:scale-100 scale-75">
           Get Started
         </AnimatedButton>
       </DialogTrigger>
