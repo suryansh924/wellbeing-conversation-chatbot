@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, MessageSquare } from "lucide-react";
 import chatService, { ApiMessage } from "@/services/apiService";
 import Message from "@/components/Conversation/message";
+import { toast } from "sonner";
 
 export default function ConversationPage() {
   const { id } = useParams();
@@ -19,7 +20,7 @@ export default function ConversationPage() {
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Check if user is authenticated
+  // Check if user is authenticated
     let isMounted = true;
     async function checkProfile() {
       try {
@@ -40,6 +41,10 @@ export default function ConversationPage() {
         }
       } catch (error) {
         console.error("Error fetching profile", error);
+        toast.error("Authentication Error", {
+          description: "Failed to authenticate user. Please log in again.",
+          id: "auth-error",
+        });
         if (isMounted) {
           router.push("/");
         }
@@ -80,6 +85,11 @@ export default function ConversationPage() {
       console.error("Error fetching messages:", error);
       setError("Failed to load conversation messages. Please try again later.");
       setMessages([]);
+      toast.error("Error Loading Conversation", {
+        description: "Failed to load conversation messages. Please try again later.",
+        id: "fetch-messages-error",
+        duration: 5000,
+      });
     } finally {
       setIsLoading(false);
     }

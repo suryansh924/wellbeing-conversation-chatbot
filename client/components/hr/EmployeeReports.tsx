@@ -40,6 +40,8 @@ interface EmployeeReportsProps {
   searchQuery?: string;
   employees: Employee[];
   employeesWithReports: Employee[];
+  onRegenerateReport: (employeeId: string) => void;
+  isGenerating: boolean;
 }
 
 export function EmployeeReports({

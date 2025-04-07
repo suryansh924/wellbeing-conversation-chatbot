@@ -9,6 +9,7 @@ import { useAuth } from "@/context/AuthContext";
 import { Hamburger, MobileMenu } from "@/components/ui/hamburger";
 import chatService, { ApiConversation } from "@/services/apiService";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { toast } from "sonner"; // Import toast from sonner
 
 export interface Conversation {
   id: string;
@@ -55,6 +56,7 @@ export default function DashboardPage() {
         }
       } catch (error) {
         console.error("Authentication error:", error);
+        toast.error("Authentication failed. Redirecting to login.");
         router.push("/"); // Redirect on any auth error
       }
     };
@@ -108,12 +110,15 @@ export default function DashboardPage() {
           }));
 
         setPastConversations(formattedConversations);
+        toast.success("Conversations loaded successfully.");
       } else {
         // If no conversations returned, set empty array
         setPastConversations([]);
+        toast.info("No conversations found.");
       }
     } catch (error) {
       console.error("Error fetching conversations:", error);
+      toast.error("Failed to load conversations.");
       setPastConversations([]);
     } finally {
       setIsLoading(false);

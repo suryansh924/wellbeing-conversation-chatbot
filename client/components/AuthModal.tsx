@@ -20,6 +20,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { FaTwitter } from "react-icons/fa";
 import { motion, AnimatePresence } from "framer-motion";
+import { toast } from "sonner"; // Import toast from sonner
 
 // Add this to your globals.css
 
@@ -177,7 +178,7 @@ export default function AuthModal() {
       // Validate only the specific field
       const fieldSchema =
         registerSchema._def.schema.shape[
-        name as keyof typeof registerSchema._def.schema.shape
+          name as keyof typeof registerSchema._def.schema.shape
         ];
       const result = fieldSchema.safeParse(value);
       setRegisterErrors((prevErrors) => ({
@@ -219,6 +220,9 @@ export default function AuthModal() {
     if (result.success) {
       setLoading(true);
       try {
+        // Show loading toast
+        toast.loading("Logging in...", { id: "login-attempt" });
+
         await signIn(LoginformData.email, LoginformData.password);
         const res = await axios.post(
           "http://127.0.0.1:8000/api/user/login",
@@ -235,12 +239,25 @@ export default function AuthModal() {
         console.log(res);
         const token = res.data.token;
         localStorage.setItem("access_token", token);
-        localStorage.setItem("user_role", res.data.role);
         setIsLogged(true);
+
+        // Dismiss loading toast and show success
+        toast.dismiss("login-attempt");
+        toast.success("Login Successful", {
+          description: "Welcome back! Redirecting to your dashboard...",
+        });
+
         await handlePostAuth();
         setSignInModalVisible(false);
       } catch (err: unknown) {
         setError("Invalid Credentials");
+
+        // Dismiss loading toast and show error
+        toast.dismiss("login-attempt");
+        toast.error("Login Failed", {
+          description: "Invalid email or password. Please try again.",
+          id: "login-error",
+        });
       } finally {
         setLoading(false);
       }
@@ -297,7 +314,6 @@ export default function AuthModal() {
         );
         const token = res.data.token;
         localStorage.setItem("access_token", token);
-        localStorage.setItem("user_role", res.data.role);
         setIsLogged(true);
         await handlePostAuth();
         setSignInModalVisible(false);
@@ -340,7 +356,6 @@ export default function AuthModal() {
       });
       const token = res.data.token;
       localStorage.setItem("access_token", token);
-      localStorage.setItem("user_role", res.data.role);
       setIsLogged(true);
       await handlePostAuth();
       setSignInModalVisible(false);
@@ -366,7 +381,6 @@ export default function AuthModal() {
       });
       const token = res.data.token;
       localStorage.setItem("access_token", token);
-      localStorage.setItem("user_role", res.data.role);
       setIsLogged(true);
       await handlePostAuth();
       setSignInModalVisible(false);
@@ -416,190 +430,381 @@ export default function AuthModal() {
       </DialogTrigger>
 
       <DialogContent className="fixed sm:max-w-[425px] dark bg-[#131313] text-white border-none dialog-content top-5 p-0 ">
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 to-teal-500"></div>
 
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 to-teal-500"></div>
+        <DialogHeader className="p-6 pb-2">
+          <DialogTitle className="text-center text-2xl font-bold">
+            {mode === "login" ? "Welcome Back" : "Join MoodPulse"}
+          </DialogTitle>
+        </DialogHeader>
 
-          <DialogHeader className="p-6 pb-2">
-            <DialogTitle className="text-center text-2xl font-bold">
-              {mode === "login" ? "Welcome Back" : "Join MoodPulse"}
-            </DialogTitle>
-          </DialogHeader>
+        <div className="p-6">
+          <AnimatePresence mode="wait">
+            {showLoginForm && (
+              <motion.div
+                key="login-form"
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+                variants={formVariants}
+              >
+                <form className="grid gap-4" onSubmit={handleLoginSubmit}>
+                  <div className="flex flex-col gap-4">
+                    <button
+                      type="button"
+                      onClick={() => handleGoogleSignIn()}
+                      className="cursor-pointer relative w-full bg-white text-black hover:bg-gray-100 p-3 rounded-md flex items-center justify-center gap-2 font-medium transition-all duration-300 social-button"
+                    >
+                      <FcGoogle className="text-xl" />
+                      <span>Sign in with Google</span>
+                    </button>
 
-          <div className="p-6">
-            <AnimatePresence mode="wait">
-              {showLoginForm && (
-                <motion.div
-                  key="login-form"
-                  initial="hidden"
-                  animate="visible"
-                  exit="exit"
-                  variants={formVariants}
-                >
-                  <form className="grid gap-4" onSubmit={handleLoginSubmit}>
-                    <div className="flex flex-col gap-4">
-                      <button
-                        type="button"
-                        onClick={() => handleGoogleSignIn()}
-                        className="cursor-pointer relative w-full bg-white text-black hover:bg-gray-100 p-3 rounded-md flex items-center justify-center gap-2 font-medium transition-all duration-300 social-button"
-                      >
-                        <FcGoogle className="text-xl" />
-                        <span>Sign in with Google</span>
-                      </button>
+                    <button
+                      type="button"
+                      onClick={() => handleTwitterSignIn()}
+                      className="cursor-pointer relative w-full bg-[#1DA1F2] text-white hover:bg-[#1a8cd8] p-3 rounded-md flex items-center justify-center gap-2 font-medium transition-all duration-300 social-button"
+                    >
+                      <FaTwitter className="text-xl" />
+                      <span>Sign in with Twitter</span>
+                    </button>
 
-                      <button
-                        type="button"
-                        onClick={() => handleTwitterSignIn()}
-                        className="cursor-pointer relative w-full bg-[#1DA1F2] text-white hover:bg-[#1a8cd8] p-3 rounded-md flex items-center justify-center gap-2 font-medium transition-all duration-300 social-button"
-                      >
-                        <FaTwitter className="text-xl" />
-                        <span>Sign in with Twitter</span>
-                      </button>
-
-                      <div className="divider">
-                        <span>Or continue with</span>
-                      </div>
-
-                      <div className="grid gap-2">
-                        <Label
-                          htmlFor="loginEmail"
-                          className="text-sm font-medium"
-                        >
-                          Email
-                        </Label>
-                        <Input
-                          id="loginEmail"
-                          name="email"
-                          type="email"
-                          placeholder="you@example.com"
-                          onChange={handleLoginChange}
-                          required={true}
-                          className="auth-input p-3 rounded-md"
-                        />
-                        {Loginerrors.email ? (
-                          <p className="text-red-500 text-xs mt-1">
-                            Enter valid email.
-                          </p>
-                        ) : null}
-                      </div>
-
-                      <div className="grid gap-2">
-                        <Label
-                          htmlFor="loginPassword"
-                          className="text-sm font-medium"
-                        >
-                          Password
-                        </Label>
-                        <Input
-                          id="loginPassword"
-                          name="password"
-                          type="password"
-                          placeholder="••••••••"
-                          onChange={handleLoginChange}
-                          required={true}
-                          className="auth-input p-3 rounded-md"
-                        />
-                        {Loginerrors.password ? (
-                          <p className="text-red-500 text-xs mt-1">
-                            Password must contain at least 8 characters, including
-                            letters, numbers, and special characters
-                          </p>
-                        ) : null}
-                      </div>
+                    <div className="divider">
+                      <span>Or continue with</span>
                     </div>
 
-                    {error && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="bg-red-500/10 border border-red-500/20 text-red-500 p-3 rounded-md text-sm"
-                      >
-                        {error}
-                      </motion.div>
-                    )}
-
-                    <DialogFooter className="mt-4">
-                      <AnimatedButton
-                        variant="default"
-                        type="submit"
-                        className="cursor-pointer font-medium text-base w-full py-3"
-                      >
-                        {loading ? (
-                          <span className="flex items-center justify-center gap-2">
-                            <svg
-                              className="animate-spin h-5 w-5"
-                              xmlns="http://www.w3.org/2000/svg"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                            >
-                              <circle
-                                className="opacity-25"
-                                cx="12"
-                                cy="12"
-                                r="10"
-                                stroke="currentColor"
-                                strokeWidth="4"
-                              ></circle>
-                              <path
-                                className="opacity-75"
-                                fill="currentColor"
-                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                              ></path>
-                            </svg>
-                            Signing In...
-                          </span>
-                        ) : (
-                          "Sign In"
-                        )}
-                      </AnimatedButton>
-                    </DialogFooter>
-
-                    <p className="text-center text-sm mt-4">
-                      Don&apos;t have an account?{" "}
-                      <button
-                        type="button"
-                        className="text-emerald-500 font-medium cursor-pointer hover:text-emerald-400 transition-colors"
-                        onClick={() => {
-                          setError("");
-                          setMode("register");
-                          setRegisterStep("checkId");
-                        }}
-                      >
-                        Create Account
-                      </button>
-                    </p>
-                  </form>
-                </motion.div>
-              )}
-
-              {showVerifyForm && (
-                <motion.div
-                  key="verify-form"
-                  initial="hidden"
-                  animate="visible"
-                  exit="exit"
-                  variants={formVariants}
-                >
-                  <form className="grid gap-4" onSubmit={handleVerifyEmployeeId}>
                     <div className="grid gap-2">
                       <Label
-                        htmlFor="regEmployeeId"
+                        htmlFor="loginEmail"
                         className="text-sm font-medium"
                       >
-                        Employee ID
+                        Email
                       </Label>
                       <Input
-                        id="regEmployeeId"
-                        name="regEmployeeId"
-                        type="text"
-                        placeholder="Enter Employee ID"
-                        value={regEmployeeId}
-                        onChange={(e) => setRegEmployeeId(e.target.value)}
+                        id="loginEmail"
+                        name="email"
+                        type="email"
+                        placeholder="you@example.com"
+                        onChange={handleLoginChange}
                         required={true}
                         className="auth-input p-3 rounded-md"
                       />
-                      <p className="text-xs text-gray-400 mt-1">
-                        Please enter your employee ID to verify your eligibility.
-                      </p>
+                      {Loginerrors.email ? (
+                        <p className="text-red-500 text-xs mt-1">
+                          Enter valid email.
+                        </p>
+                      ) : null}
+                    </div>
+
+                    <div className="grid gap-2">
+                      <Label
+                        htmlFor="loginPassword"
+                        className="text-sm font-medium"
+                      >
+                        Password
+                      </Label>
+                      <Input
+                        id="loginPassword"
+                        name="password"
+                        type="password"
+                        placeholder="••••••••"
+                        onChange={handleLoginChange}
+                        required={true}
+                        className="auth-input p-3 rounded-md"
+                      />
+                      {Loginerrors.password ? (
+                        <p className="text-red-500 text-xs mt-1">
+                          Password must contain at least 8 characters, including
+                          letters, numbers, and special characters
+                        </p>
+                      ) : null}
+                    </div>
+                  </div>
+
+                  {error && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="bg-red-500/10 border border-red-500/20 text-red-500 p-3 rounded-md text-sm"
+                    >
+                      {error}
+                    </motion.div>
+                  )}
+
+                  <DialogFooter className="mt-4">
+                    <AnimatedButton
+                      variant="default"
+                      type="submit"
+                      className="cursor-pointer font-medium text-base w-full py-3"
+                    >
+                      {loading ? (
+                        <span className="flex items-center justify-center gap-2">
+                          <svg
+                            className="animate-spin h-5 w-5"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                          >
+                            <circle
+                              className="opacity-25"
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                            ></circle>
+                            <path
+                              className="opacity-75"
+                              fill="currentColor"
+                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                            ></path>
+                          </svg>
+                          Signing In...
+                        </span>
+                      ) : (
+                        "Sign In"
+                      )}
+                    </AnimatedButton>
+                  </DialogFooter>
+
+                  <p className="text-center text-sm mt-4">
+                    Don&apos;t have an account?{" "}
+                    <button
+                      type="button"
+                      className="text-emerald-500 font-medium cursor-pointer hover:text-emerald-400 transition-colors"
+                      onClick={() => {
+                        setError("");
+                        setMode("register");
+                        setRegisterStep("checkId");
+                      }}
+                    >
+                      Create Account
+                    </button>
+                  </p>
+                </form>
+              </motion.div>
+            )}
+
+            {showVerifyForm && (
+              <motion.div
+                key="verify-form"
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+                variants={formVariants}
+              >
+                <form className="grid gap-4" onSubmit={handleVerifyEmployeeId}>
+                  <div className="grid gap-2">
+                    <Label
+                      htmlFor="regEmployeeId"
+                      className="text-sm font-medium"
+                    >
+                      Employee ID
+                    </Label>
+                    <Input
+                      id="regEmployeeId"
+                      name="regEmployeeId"
+                      type="text"
+                      placeholder="Enter Employee ID"
+                      value={regEmployeeId}
+                      onChange={(e) => setRegEmployeeId(e.target.value)}
+                      required={true}
+                      className="auth-input p-3 rounded-md"
+                    />
+                    <p className="text-xs text-gray-400 mt-1">
+                      Please enter your employee ID to verify your eligibility.
+                    </p>
+                  </div>
+
+                  {error && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="bg-red-500/10 border border-red-500/20 text-red-500 p-3 rounded-md text-sm"
+                    >
+                      {error}
+                    </motion.div>
+                  )}
+
+                  <DialogFooter className="mt-4">
+                    <AnimatedButton
+                      type="submit"
+                      disabled={loading}
+                      className="cursor-pointer font-medium text-base w-full py-3"
+                    >
+                      {loading ? (
+                        <span className="flex items-center justify-center gap-2">
+                          <svg
+                            className="animate-spin h-5 w-5"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                          >
+                            <circle
+                              className="opacity-25"
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                            ></circle>
+                            <path
+                              className="opacity-75"
+                              fill="currentColor"
+                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                            ></path>
+                          </svg>
+                          Verifying...
+                        </span>
+                      ) : (
+                        "Verify Employee ID"
+                      )}
+                    </AnimatedButton>
+                  </DialogFooter>
+
+                  <p className="text-center text-sm mt-4">
+                    Already have an account?{" "}
+                    <button
+                      type="button"
+                      className="text-emerald-500 font-medium cursor-pointer hover:text-emerald-400 transition-colors"
+                      onClick={() => {
+                        setError("");
+                        setMode("login");
+                      }}
+                    >
+                      Sign In
+                    </button>
+                  </p>
+                </form>
+              </motion.div>
+            )}
+
+            {showRegisterForm && (
+              <motion.div
+                key="register-form"
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+                variants={formVariants}
+              >
+                <div className="grid gap-4">
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 p-3 rounded-md text-sm text-center"
+                  >
+                    Employee ID verified successfully!
+                  </motion.div>
+
+                  <div className="flex flex-col gap-4">
+                    <button
+                      type="button"
+                      onClick={() => handleGoogleSignIn(true)}
+                      className="cursor-pointer relative w-full bg-white text-black hover:bg-gray-100 p-3 rounded-md flex items-center justify-center gap-2 font-medium transition-all duration-300 social-button"
+                    >
+                      <FcGoogle className="text-xl" />
+                      <span>Register with Google</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleTwitterSignIn(true)}
+                      className="cursor-pointer relative w-full bg-[#1DA1F2] text-white hover:bg-[#1a8cd8] p-3 rounded-md flex items-center justify-center gap-2 font-medium transition-all duration-300 social-button"
+                    >
+                      <FaTwitter className="text-xl" />
+                      <span>Register with Twitter</span>
+                    </button>
+
+                    <div className="divider">
+                      <span>Or continue with</span>
+                    </div>
+                  </div>
+
+                  <form className="grid gap-4" onSubmit={handleRegisterSubmit}>
+                    <div className="grid gap-2">
+                      <Label htmlFor="regName" className="text-sm font-medium">
+                        Name
+                      </Label>
+                      <Input
+                        id="regName"
+                        name="name"
+                        type="text"
+                        placeholder="Your Name"
+                        onChange={handleRegisterChange}
+                        required={true}
+                        className="auth-input p-3 rounded-md"
+                      />
+                      {Registererrors.name ? (
+                        <p className="text-red-500 text-xs mt-1">
+                          Enter valid Name.
+                        </p>
+                      ) : null}
+                    </div>
+
+                    <div className="grid gap-2">
+                      <Label htmlFor="regEmail" className="text-sm font-medium">
+                        Email
+                      </Label>
+                      <Input
+                        id="regEmail"
+                        name="email"
+                        type="email"
+                        placeholder="you@example.com"
+                        onChange={handleRegisterChange}
+                        required={true}
+                        className="auth-input p-3 rounded-md"
+                      />
+                      {Registererrors.email ? (
+                        <p className="text-red-500 text-xs mt-1">
+                          Enter valid email.
+                        </p>
+                      ) : null}
+                    </div>
+
+                    <div className="grid gap-2">
+                      <Label
+                        htmlFor="regPassword"
+                        className="text-sm font-medium"
+                      >
+                        Password
+                      </Label>
+                      <Input
+                        id="regPassword"
+                        name="password"
+                        type="password"
+                        placeholder="••••••••"
+                        onChange={handleRegisterChange}
+                        required={true}
+                        className="auth-input p-3 rounded-md"
+                      />
+                      {Registererrors.password ? (
+                        <p className="text-red-500 text-xs mt-1">
+                          Password must contain at least 8 characters, including
+                          letters, numbers, and special characters
+                        </p>
+                      ) : null}
+                    </div>
+
+                    <div className="grid gap-2">
+                      <Label
+                        htmlFor="regConfirmPassword"
+                        className="text-sm font-medium"
+                      >
+                        Confirm Password
+                      </Label>
+                      <Input
+                        id="regConfirmPassword"
+                        name="confirmPassword"
+                        type="password"
+                        placeholder="••••••••"
+                        onChange={handleRegisterChange}
+                        required={true}
+                        className="auth-input p-3 rounded-md"
+                      />
+                      {Registererrors.confirmPassword ? (
+                        <p className="text-red-500 text-xs mt-1">
+                          Passwords Don&apos;t match{" "}
+                        </p>
+                      ) : null}
                     </div>
 
                     {error && (
@@ -640,225 +845,33 @@ export default function AuthModal() {
                                 d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                               ></path>
                             </svg>
-                            Verifying...
+                            Registering...
                           </span>
                         ) : (
-                          "Verify Employee ID"
+                          "Complete Registration"
                         )}
                       </AnimatedButton>
                     </DialogFooter>
-
-                    <p className="text-center text-sm mt-4">
-                      Already have an account?{" "}
-                      <button
-                        type="button"
-                        className="text-emerald-500 font-medium cursor-pointer hover:text-emerald-400 transition-colors"
-                        onClick={() => {
-                          setError("");
-                          setMode("login");
-                        }}
-                      >
-                        Sign In
-                      </button>
-                    </p>
                   </form>
-                </motion.div>
-              )}
 
-              {showRegisterForm && (
-                <motion.div
-                  key="register-form"
-                  initial="hidden"
-                  animate="visible"
-                  exit="exit"
-                  variants={formVariants}
-                >
-                  <div className="grid gap-4">
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 p-3 rounded-md text-sm text-center"
+                  <p className="text-center text-sm mt-4">
+                    Already have an account?{" "}
+                    <button
+                      type="button"
+                      className="text-emerald-500 font-medium cursor-pointer hover:text-emerald-400 transition-colors"
+                      onClick={() => {
+                        setError("");
+                        setMode("login");
+                      }}
                     >
-                      Employee ID verified successfully!
-                    </motion.div>
-
-                    <div className="flex flex-col gap-4">
-                      <button
-                        type="button"
-                        onClick={() => handleGoogleSignIn(true)}
-                        className="cursor-pointer relative w-full bg-white text-black hover:bg-gray-100 p-3 rounded-md flex items-center justify-center gap-2 font-medium transition-all duration-300 social-button"
-                      >
-                        <FcGoogle className="text-xl" />
-                        <span>Register with Google</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => handleTwitterSignIn(true)}
-                        className="cursor-pointer relative w-full bg-[#1DA1F2] text-white hover:bg-[#1a8cd8] p-3 rounded-md flex items-center justify-center gap-2 font-medium transition-all duration-300 social-button"
-                      >
-                        <FaTwitter className="text-xl" />
-                        <span>Register with Twitter</span>
-                      </button>
-
-                      <div className="divider">
-                        <span>Or continue with</span>
-                      </div>
-                    </div>
-
-                    <form className="grid gap-4" onSubmit={handleRegisterSubmit}>
-                      <div className="grid gap-2">
-                        <Label htmlFor="regName" className="text-sm font-medium">
-                          Name
-                        </Label>
-                        <Input
-                          id="regName"
-                          name="name"
-                          type="text"
-                          placeholder="Your Name"
-                          onChange={handleRegisterChange}
-                          required={true}
-                          className="auth-input p-3 rounded-md"
-                        />
-                        {Registererrors.name ? (
-                          <p className="text-red-500 text-xs mt-1">
-                            Enter valid Name.
-                          </p>
-                        ) : null}
-                      </div>
-
-                      <div className="grid gap-2">
-                        <Label htmlFor="regEmail" className="text-sm font-medium">
-                          Email
-                        </Label>
-                        <Input
-                          id="regEmail"
-                          name="email"
-                          type="email"
-                          placeholder="you@example.com"
-                          onChange={handleRegisterChange}
-                          required={true}
-                          className="auth-input p-3 rounded-md"
-                        />
-                        {Registererrors.email ? (
-                          <p className="text-red-500 text-xs mt-1">
-                            Enter valid email.
-                          </p>
-                        ) : null}
-                      </div>
-
-                      <div className="grid gap-2">
-                        <Label
-                          htmlFor="regPassword"
-                          className="text-sm font-medium"
-                        >
-                          Password
-                        </Label>
-                        <Input
-                          id="regPassword"
-                          name="password"
-                          type="password"
-                          placeholder="••••••••"
-                          onChange={handleRegisterChange}
-                          required={true}
-                          className="auth-input p-3 rounded-md"
-                        />
-                        {Registererrors.password ? (
-                          <p className="text-red-500 text-xs mt-1">
-                            Password must contain at least 8 characters, including
-                            letters, numbers, and special characters
-                          </p>
-                        ) : null}
-                      </div>
-
-                      <div className="grid gap-2">
-                        <Label
-                          htmlFor="regConfirmPassword"
-                          className="text-sm font-medium"
-                        >
-                          Confirm Password
-                        </Label>
-                        <Input
-                          id="regConfirmPassword"
-                          name="confirmPassword"
-                          type="password"
-                          placeholder="••••••••"
-                          onChange={handleRegisterChange}
-                          required={true}
-                          className="auth-input p-3 rounded-md"
-                        />
-                        {Registererrors.confirmPassword ? (
-                          <p className="text-red-500 text-xs mt-1">
-                            Passwords Don&apos;t match{" "}
-                          </p>
-                        ) : null}
-                      </div>
-
-                      {error && (
-                        <motion.div
-                          initial={{ opacity: 0, y: -10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          className="bg-red-500/10 border border-red-500/20 text-red-500 p-3 rounded-md text-sm"
-                        >
-                          {error}
-                        </motion.div>
-                      )}
-
-                      <DialogFooter className="mt-4">
-                        <AnimatedButton
-                          type="submit"
-                          disabled={loading}
-                          className="cursor-pointer font-medium text-base w-full py-3"
-                        >
-                          {loading ? (
-                            <span className="flex items-center justify-center gap-2">
-                              <svg
-                                className="animate-spin h-5 w-5"
-                                xmlns="http://www.w3.org/2000/svg"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                              >
-                                <circle
-                                  className="opacity-25"
-                                  cx="12"
-                                  cy="12"
-                                  r="10"
-                                  stroke="currentColor"
-                                  strokeWidth="4"
-                                ></circle>
-                                <path
-                                  className="opacity-75"
-                                  fill="currentColor"
-                                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                                ></path>
-                              </svg>
-                              Registering...
-                            </span>
-                          ) : (
-                            "Complete Registration"
-                          )}
-                        </AnimatedButton>
-                      </DialogFooter>
-                    </form>
-
-                    <p className="text-center text-sm mt-4">
-                      Already have an account?{" "}
-                      <button
-                        type="button"
-                        className="text-emerald-500 font-medium cursor-pointer hover:text-emerald-400 transition-colors"
-                        onClick={() => {
-                          setError("");
-                          setMode("login");
-                        }}
-                      >
-                        Sign In
-                      </button>
-                    </p>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
+                      Sign In
+                    </button>
+                  </p>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       </DialogContent>
     </Dialog>
   );
