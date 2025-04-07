@@ -9,7 +9,7 @@ type MessageProps = {
   id: string;
   content: string;
   isUser: boolean;
-  timestamp: Date;
+  timestamp: string;
   msg_type:string;
 };
 
@@ -17,6 +17,9 @@ function Message({ id, content, isUser, timestamp,msg_type}: MessageProps) {
   const audioPlayerRef = React.useRef<HTMLAudioElement>(null);
   const [isSpeakerOn, setIsSpeakerOn] = React.useState(false);
   const [audioUrl, setAudioUrl] = React.useState<string | null>(null);
+  const [hours, minutes] = timestamp.split(":");
+  const date = new Date();
+  date.setHours(parseInt(hours), parseInt(minutes));
 
   const SpeakAloud = async () => {
     setIsSpeakerOn(true);
@@ -82,9 +85,10 @@ function Message({ id, content, isUser, timestamp,msg_type}: MessageProps) {
             </div>
             <div className="flex justify-between items-center mt-1">
               <div className="text-xs opacity-70 text-right">
-                {timestamp.toLocaleTimeString([], {
+                {date.toLocaleTimeString([], {
                   hour: "2-digit",
                   minute: "2-digit",
+                  hour12: true,
                 })}
               </div>
 

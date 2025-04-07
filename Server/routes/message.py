@@ -62,7 +62,7 @@ def detect_contradiction(user_response, chat_history):
     """Checks if the user response contradicts any previous responses."""
 
     if len(chat_history) < 2:
-        return None  # Not enough context for contradiction
+        return ""  # Not enough context for contradiction
     try:
         system_prompt = "You are a helpful assistant that detects contradictions in a conversation."
         user_prompt = f"""
@@ -77,18 +77,18 @@ def detect_contradiction(user_response, chat_history):
         """
 
         contradiction_question = chat_with_gpt4o(system_prompt, user_prompt)
-        return None if contradiction_question.lower() == "none" else contradiction_question
+        return "" if contradiction_question.lower() == "none" else contradiction_question
     except Exception as e:
         print(f"Error in detect_contradiction: {e}")
-        return None
+        return ""
 
 
 def generate_follow_up(user_response):
-    """Generate 2 follow-up questions based on the user's response."""
+    """Generate 1 follow-up questions based on the user's response."""
     try:
         system_prompt = "You are an assistant skilled in deepening conversation by asking good follow-up questions."
         user_prompt = f"""
-        Based on the user's response: "{user_response}", generate exactly 2 follow-up questions:
+        Based on the user's response: "{user_response}", generate exactly 1 follow-up questions:
         - The questions should encourage deeper thinking.
         - Each question should explore a different aspect or angle.
         - Return each question on a new line.
@@ -96,7 +96,7 @@ def generate_follow_up(user_response):
 
 
         follow_ups = chat_with_gpt4o(system_prompt, user_prompt).split("\n")
-        return [q.strip() for q in follow_ups if q.strip()][:2]
+        return [q.strip() for q in follow_ups if q.strip()][:1]
     except Exception as e:
         print(f"Error in generate_follow_up: {e}")
         return []
@@ -174,8 +174,9 @@ def chatbot_conversation(shap_values, chat_history, user_response, message_type,
             print(f"User Response1: {user_response}")
             contradiction_follow_up = detect_contradiction(
                 user_response, chat_history)
+            print(f"🤖: {contradiction_follow_up}")
 
-            if contradiction_follow_up:
+            if contradiction_follow_up!= ""  and contradiction_follow_up!= None and contradiction_follow_up!= "None.":
                 print(f"🤖: {contradiction_follow_up}")
                 asked_questions.add(contradiction_follow_up)
                 if message_type == "normal_question":
