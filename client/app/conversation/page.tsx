@@ -18,7 +18,7 @@ interface Message {
   id: string;
   content: string;
   isUser: boolean;
-  timestamp: Date;
+  timestamp: string;
   msg_type: string; // normal_question, followup_1, followup_2, insights, welcome, user_msg
 }
 
@@ -29,7 +29,7 @@ interface TypingIndicator {
 export default function ConversationPage() {
   // const server = "http://127.0.0.1:8000";
 
-  const TotalQuestions = 6;
+  const TotalQuestions = 5;
 
   const { employeeData, check_role } = useAuth();
   const router = useRouter();
@@ -110,6 +110,8 @@ export default function ConversationPage() {
             {questionsAsked++; }// Count chatbot messages
             setMessageType(msg.message_type);
           }
+          console.log(msg.time); 
+          
           return {
             id: msg.id.toString(),
             content: msg.content,
@@ -119,20 +121,24 @@ export default function ConversationPage() {
           };
         }
       );
-      console.log("questions Asked:", questionsAsked - 1);
-      setMaxQuestions(TotalQuestions - questionsAsked - 1);
+      console.log("questions Asked:", questionsAsked);
+      // setMaxQuestions(TotalQuestions - questionsAsked - 1);
       console.log(maxQuestions);
       setMessages(formattedMessages);
-      // setConversationId(lastConversation.id);
+      
+      // Add just one toast notification with unique ID
       toast.success("Conversation Resumed", {
-        description: "Your previous conversation has been loaded successfully",
+        description: "You're continuing your previous conversation.",
+        id: "conversation-resumed", // Add unique ID to prevent duplicate toasts
       });
+      
       // return true;
       // } else return false;
     } catch (error) {
       console.error("Error fetching conversations:", error);
       toast.error("Error", {
         description: "Failed to check for incomplete conversations",
+        id: "failed-fetch-conversations" // Add unique ID for error toast
       });
       return false;
     }
@@ -141,6 +147,9 @@ export default function ConversationPage() {
   const startConv = async () => {
     // console.log("Starting Conversation");
     try {
+      // Show typing indicator while waiting for the first message
+      setIsTyping({ isActive: true });
+      
       const response = await axios.get(`${server}/api/conversation/start`, {
         headers: {
           "Content-Type": "application/json",
@@ -153,21 +162,28 @@ export default function ConversationPage() {
 
       setConversationId(data.conversation_id);
       // setSelectedQuestions(data.selected_questions);
+      
+      // Hide typing indicator after receiving the response
+      setIsTyping({ isActive: false });
 
       setMessages([
         {
           id: "welcome",
           content: data.chatbot_response,
           isUser: false,
-          timestamp: new Date(),
+          timestamp: new Date().toTimeString().split(" ")[0],
           msg_type: "welcome",
         },
       ]);
       return;
     } catch (error) {
+      // Hide typing indicator in case of error
+      setIsTyping({ isActive: false });
+      
       console.error("Error starting conversation:", error);
       toast.error("Error", {
         description: "Failed to start the conversation. Please try again.",
+        id: "conversation-start-failed"
       });
     }
   };
@@ -280,7 +296,7 @@ export default function ConversationPage() {
         id: `bot-${Date.now()}`,
         content: data.insights,
         isUser: false,
-        timestamp: new Date(),
+        timestamp: new Date().toTimeString().split(" ")[0],
         msg_type: "insights",
       };
 
@@ -289,6 +305,7 @@ export default function ConversationPage() {
       console.error("Error providing insights:", error);
       toast.error("Error", {
         description: "Failed to generate insights. Please try again later.",
+        id: "insights-error"
       });
     }
   };
@@ -316,6 +333,7 @@ export default function ConversationPage() {
       toast.error("Error", {
         description:
           "Failed to generate your wellbeing report. Please try again later.",
+          id: "error-type"
       });
     }
   };
@@ -333,7 +351,7 @@ export default function ConversationPage() {
         id: `user-${Date.now()}`,
         content: inputValue,
         isUser: true,
-        timestamp: new Date(),
+        timestamp: new Date().toTimeString().split(" ")[0],
         msg_type: "user_msg",
       };
       setMessages((prev) => [...prev, userMessage]);
@@ -353,11 +371,11 @@ export default function ConversationPage() {
           // console.log("employee_name:", employee_name);
           // console.log("employee_name:", employee_id);
           // console.log("Conversation_id:", conversationId);
-          console.log("Chat history:", chat_history);
-          console.log("Selected Questions:", selectedQuestions);
-          console.log("Message_type:", message_type);
-          console.log("Input Value:", inputValue);
-          console.log("Conversation ID:", conversationId);
+          // console.log("Chat history:", chat_history);
+          // console.log("Selected Questions:", selectedQuestions);
+          // console.log("Message_type:", message_type);
+          // console.log("Input Value:", inputValue);
+          // console.log("Conversation ID:", conversationId);
         
           
           const response = await axios.post(
@@ -387,18 +405,20 @@ export default function ConversationPage() {
           setIsTyping({ isActive: false });
           setSelectedQuestions(data.question_set);
           setMessageType(data.message_type);
-
+          if (data.message_type === "normal_question") {
+            setMaxQuestions((prev) => prev - 1);
+          }
           const botMessage: Message = {
             id: `bot-${Date.now()}`,
             content: chatbot_response,
             msg_type: data.message_type,
             isUser: false,
-            timestamp: new Date(),
+            timestamp: new Date().toTimeString().split(" ")[0],
           };
 
           setMessages((prev) => [...prev, botMessage]);
 
-          setMaxQuestions(maxQuestions - 1);
+          setMaxQuestions((prev) => prev - 1);
           console.log(maxQuestions);
         } catch (error) {
           console.error("Error sending message:", error);
@@ -407,7 +427,12 @@ export default function ConversationPage() {
           toast.error("Connection Error", {
             description:
               "Failed to send your message. Please check your connection and try again.",
+            id: "send-message-connection-error"
           });
+          setIsTyping({ isActive: false });
+          setIsLoading(false);
+          //delete the last user message
+          setMessages((prev) => prev.slice(0, prev.length - 1));
         }
       } else {
         setHasEnded(true);
@@ -491,6 +516,7 @@ export default function ConversationPage() {
       toast.error("Transcription Error", {
         description:
           "Failed to transcribe your voice. Please try typing instead.",
+        id: "transcription-error"
       });
     } finally {
       setIsAudioProcessing(false);

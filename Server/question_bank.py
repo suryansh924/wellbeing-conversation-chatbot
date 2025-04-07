@@ -4,28 +4,28 @@ question_bank = {
   "Average_Vibe_Score": {
     "description": "Explores how employees perceive their overall emotional well-being and satisfaction at work.",
     "questions": [
-      "How do you think the Average Vibe Score compares to your overall feeling of well‑being at work?",
-      "How do you feel about the trend in your vibe score—has it been improving or declining?",
-      "Does your vibe score align with your level of job satisfaction? Why or why not?",
-      "What aspects of your job contribute most to your vibe score, either positively or negatively?",
-      "Do you think your vibe score influences how engaged or productive you feel at work?"
+      "How do you think your overall mood compares to your general sense of well-being at work?",
+      "How do you feel about the trend in your mood at work—has it been improving or declining?",
+      "Does your level of mood align with your overall job satisfaction? Why or why not?",
+      "What aspects of your job contribute most to your mood, either positively or negatively?",   
+      "Do you think your mood at work affects how engaged or productive you feel?"
     ]
   },
   "Latest_Vibe_Score": {
     "description": "Focuses on current mood and short-term factors influencing emotional state at work.",
     "questions": [
-      "Does your Latest Vibe Score match the mood you’re currently in at work?",
-      "What are some factors you believe have contributed to your vibe score recently?",
-      "Have you noticed any patterns in your vibe score based on workload or deadlines?",
-      "Do you feel more supported by your colleagues when your vibe score is higher?",
-      "Would you say your vibe score accurately represents your day‑to‑day experience at work?"
+      "Does your current mood at work match how you generally feel during the day?",
+      "What are some factors you believe have contributed to your mood recently?",
+      "Have you noticed any patterns in your mood based on workload or deadlines?",
+      "Do you feel more supported by your colleagues when your mood is better?",
+      "Would you say your mood accurately represents your day to day experience at work?"
     ]
   },
   "Total_Rewards_Received": {
     "description": "Evaluates employee satisfaction with recognition and rewards for contributions.",
     "questions": [
       "Do you feel adequately rewarded for your contributions, considering your Total Rewards Received?",
-      "How do you perceive the balance between the rewards you’ve received and the effort you’ve put in?",
+      "How do you perceive the balance between the rewards you have received and the effort you’ve put in?",
       "What type of rewards or recognition do you find most meaningful?",
       "Do you feel that the reward system is fair and transparent across the organization?",
       "Have you ever felt that your contributions deserved more recognition than you received?"

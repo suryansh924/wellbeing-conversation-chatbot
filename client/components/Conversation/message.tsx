@@ -9,14 +9,23 @@ type MessageProps = {
   id: string;
   content: string;
   isUser: boolean;
-  timestamp: Date;
+  timestamp: string;
   msg_type: string;
 };
 
-function Message({ id, content, isUser, timestamp, msg_type = "" }: MessageProps) {
+function Message({
+  id,
+  content,
+  isUser,
+  timestamp,
+  msg_type = "",
+}: MessageProps) {
   const audioPlayerRef = React.useRef<HTMLAudioElement>(null);
   const [isSpeakerOn, setIsSpeakerOn] = React.useState(false);
   const [audioUrl, setAudioUrl] = React.useState<string | null>(null);
+  const [hours, minutes] = timestamp.split(":");
+  const date = new Date();
+  date.setHours(parseInt(hours), parseInt(minutes));
   const [isLoading, setIsLoading] = React.useState(!isUser && content === "");
 
   const SpeakAloud = async () => {
@@ -26,6 +35,8 @@ function Message({ id, content, isUser, timestamp, msg_type = "" }: MessageProps
         URL.revokeObjectURL(audioUrl);
         setAudioUrl("");
       }
+      console.log("Fetching audio for:", content);
+
       const response = await axios.post(
         `${server}/api/conversation/tts`,
         { prompt: content },
@@ -78,7 +89,7 @@ function Message({ id, content, isUser, timestamp, msg_type = "" }: MessageProps
                 : "bg-secondary text-foreground rounded-bl-none"
             } `}
           >
-            <div className="w-full flex wrap break-all">
+            <div className="w-full flex wrap break-word">
               {!isUser && (content === "" || isLoading) ? (
                 <div className="flex items-center">
                   <div className="typing-indicator">
@@ -88,14 +99,23 @@ function Message({ id, content, isUser, timestamp, msg_type = "" }: MessageProps
                   </div>
                 </div>
               ) : (
-                content
+                //remove curly braces and quoatation marks if any from the start and end of the content
+                <div
+                  className="text-sm"
+                  dangerouslySetInnerHTML={{
+                    __html: String(content || "")
+                      .replace(/^[{'"`]+/, "") // Remove from start
+                      .replace(/[}'"`]+$/, ""), // Remove from end
+                  }}
+                ></div>
               )}
             </div>
             <div className="flex justify-between items-center mt-1">
               <div className="text-xs opacity-70 text-right">
-                {timestamp.toLocaleTimeString([], {
+                {date.toLocaleTimeString([], {
                   hour: "2-digit",
                   minute: "2-digit",
+                  hour12: true,
                 })}
               </div>
 

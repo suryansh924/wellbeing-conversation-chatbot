@@ -60,31 +60,29 @@ const HRDashboard: React.FC = () => {
   useEffect(() => {
     const checkAuth = async () => {
       setLoading(true);
-      toast.loading("Verifying HR credentials...", { id: "auth-check" });
-
       try {
         const profile = await fetchHRProfile();
         if (!check_role("hr")) {
-          toast.dismiss("auth-check");
           toast.error("Authentication failed", {
             description: "You are not authorized to access the HR dashboard",
             duration: 5000,
+            id: "hr-auth-error",
           });
           localStorage.removeItem("access_token");
           router.push("/");
           return;
         }
-        toast.dismiss("auth-check");
         toast.success("Welcome to HR Dashboard", {
           description: `Logged in as HR Manager`,
           duration: 3000,
+          id: "hr-auth-success",
         });
       } catch (error) {
         console.log(error);
-        toast.dismiss("auth-check");
         toast.error("Session expired", {
           description: "Please log in again to continue",
           duration: 5000,
+          id: "hr-session-error",
         });
         router.push("/");
       } finally {
@@ -119,6 +117,7 @@ const HRDashboard: React.FC = () => {
       toast.success("Data loaded", {
         description: `${selectedEmployees.length} employees retrieved successfully`,
         duration: 3000,
+        id: "employees-success", // Adding a unique ID to prevent duplicates
       });
     } catch (error) {
       console.error("Error fetching employees:", error);
@@ -161,6 +160,7 @@ const HRDashboard: React.FC = () => {
       toast.success("Reports loaded", {
         description: `${response.data.length} conversation reports retrieved`,
         duration: 3000,
+        id: "reports-success" // Adding a unique ID to prevent duplicates
       });
     } catch (error) {
       console.error("Error fetching employees with reports:", error);
@@ -194,8 +194,8 @@ const HRDashboard: React.FC = () => {
       setDataLoadingStatus((prev) => ({ ...prev, generating: true }));
 
       // Show loading toast
-      toast.loading(`Generating report for employee ${employeeId}...`, {
-        id: `report-gen-${employeeId}`,
+      toast.loading(`Generating report for employee...`, {
+        id: `report-gen`,
       });
 
       // API call to regenerate the report
@@ -207,10 +207,11 @@ const HRDashboard: React.FC = () => {
       );
 
       // Dismiss loading toast and show success
-      toast.dismiss(`report-gen-${employeeId}`);
+      toast.dismiss(`report-gen`);
       toast.success("Report generated", {
-        description: `New report for employee ${employeeId} has been created`,
+        description: `New report for employee has been created`,
         duration: 3000,
+        id: "report-gen-success", 
       });
 
       // Refresh the reports data
@@ -219,10 +220,11 @@ const HRDashboard: React.FC = () => {
       console.error("Error regenerating report:", error);
 
       // Dismiss loading toast and show error
-      toast.dismiss(`report-gen-${employeeId}`);
+      toast.dismiss(`report-gen`);
       toast.error("Report generation failed", {
         description: "Unable to generate a new report. Please try again.",
         duration: 5000,
+        id: "report-gen-err", // ID prevents duplicate toasts
       });
     } finally {
       setDataLoadingStatus((prev) => ({ ...prev, generating: false }));
@@ -241,6 +243,7 @@ const HRDashboard: React.FC = () => {
           toast.success("Data refreshed", {
             description: "All dashboard data has been updated",
             duration: 3000,
+            id: "refresh-success", // Adding a unique ID to prevent duplicates
           });
         })
         .catch(() => {
@@ -248,6 +251,7 @@ const HRDashboard: React.FC = () => {
           toast.error("Refresh failed", {
             description: "Could not update all dashboard data",
             duration: 5000,
+            id: "refresh-error", // ID prevents duplicate toasts
           });
         });
     }, 500);

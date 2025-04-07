@@ -19,6 +19,9 @@ import {
 } from "firebase/auth";
 import { app } from "@/firebase/config";
 import { useRouter } from "next/navigation";
+import {server} from "@/utils";
+import axios from "axios";
+import { toast } from "sonner";
 
 const auth = getAuth(app);
 
@@ -84,6 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (decoded.role === "hr") {
             await fetchHRProfile();
           } else if (decoded.role === "employee") {
+            console.log("Fetching Employee Profile Based on role :", decoded.role)
             const profile=await fetchEmployeeProfile();
             console.log("Employee Profile:", profile);
             
@@ -180,20 +184,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const fetchEmployeeProfile = async () => {
     try {
       const token = localStorage.getItem("access_token");
-      // console.log(token);
-      const response = await fetch("http://127.0.0.1:8000/api/user/employee", {
-        method: "GET",
+      console.log(token);
+      const res= await axios.get(`${server}/api/user/employee`, {
         headers: {
-          "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        credentials: "same-origin",
       });
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch employee profile");
-      }
-      const data = await response.json();
+      // console.log(res.data);
+      const data = res.data;
+      // setIsLogged(true);
       setEmployeeData(data);
       return data;
     } catch (error) {
@@ -228,11 +227,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = async () => {
-    await signOut(auth);
-    setUser(null);
-    setIsLogged(false);
-    localStorage.removeItem("access_token");
-    router.push("/");
+    toast.loading("Logging out...");
+    try {
+      await signOut(auth);
+      setUser(null);
+      setIsLogged(false);
+      localStorage.removeItem("access_token");
+      toast.dismiss();
+      toast.success("Logged out successfully");
+      router.push("/");
+    } catch (error) {
+      toast.dismiss();
+      toast.error("Failed to log out");
+      console.error("Logout error:", error);
+    }
   };
 
   return (
