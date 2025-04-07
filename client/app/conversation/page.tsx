@@ -412,6 +412,10 @@ export default function ConversationPage() {
             description:
               "Failed to send your message. Please check your connection and try again.",
           });
+          setIsTyping({ isActive: false });
+          setIsLoading(false);
+          //delete the last user message
+          setMessages((prev) => prev.slice(0, prev.length - 1));
         }
       } else {
         setHasEnded(true);

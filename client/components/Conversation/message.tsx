@@ -10,10 +10,16 @@ type MessageProps = {
   content: string;
   isUser: boolean;
   timestamp: string;
-  msg_type:string;
+  msg_type: string;
 };
 
-function Message({ id, content, isUser, timestamp, msg_type = "" }: MessageProps) {
+function Message({
+  id,
+  content,
+  isUser,
+  timestamp,
+  msg_type = "",
+}: MessageProps) {
   const audioPlayerRef = React.useRef<HTMLAudioElement>(null);
   const [isSpeakerOn, setIsSpeakerOn] = React.useState(false);
   const [audioUrl, setAudioUrl] = React.useState<string | null>(null);
@@ -29,6 +35,8 @@ function Message({ id, content, isUser, timestamp, msg_type = "" }: MessageProps
         URL.revokeObjectURL(audioUrl);
         setAudioUrl("");
       }
+      console.log("Fetching audio for:", content);
+
       const response = await axios.post(
         `${server}/api/conversation/tts`,
         { prompt: content },
@@ -91,7 +99,15 @@ function Message({ id, content, isUser, timestamp, msg_type = "" }: MessageProps
                   </div>
                 </div>
               ) : (
-                content
+                //remove curly braces and quoatation marks if any from the start and end of the content
+                <div
+                  className="text-sm"
+                  dangerouslySetInnerHTML={{
+                    __html: String(content || "")
+                      .replace(/^[{'"`]+/, "") // Remove from start
+                      .replace(/[}'"`]+$/, ""), // Remove from end
+                  }}
+                ></div>
               )}
             </div>
             <div className="flex justify-between items-center mt-1">
