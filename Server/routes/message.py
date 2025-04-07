@@ -15,7 +15,7 @@ import random
 from chatgpt import chat_with_gpt4o
 
 # Download the required data file
-# nltk.download('punkt_tab')
+nltk.download('punkt_tab')
 
 # # Tokenize each question separately and combine the results
 asked_questions = set()
@@ -26,7 +26,7 @@ def retrieve_relevant_questions(user_query, questions_set, top_k=20):
     # print("System Prompt Applied:")
     # print(system_prompt)
     try:
-        nltk.download('punkt_tab')
+        # nltk.download('punkt_tab')
         embeddings = HuggingFaceEmbeddings(
             model_name="sentence-transformers/all-MiniLM-L6-v2", encode_kwargs={"normalize_embeddings": True})
         documents = []
