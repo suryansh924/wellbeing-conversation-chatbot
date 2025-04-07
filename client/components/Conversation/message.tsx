@@ -72,11 +72,13 @@ function Message({ id, content, isUser, timestamp }: MessageProps) {
           <div
             className={`px-4 py-3 rounded-lg ${
               isUser
-                ? "bg-green-900 text-white rounded-br-none"
+                ? "bg-[#26890d] text-white rounded-br-none"
                 : "bg-secondary text-foreground rounded-bl-none"
-            }`}
+            } `}
           >
+            <div className="w-full flex wrap break-all">
             {content}
+            </div>
             <div className="flex justify-between items-center mt-1">
               <div className="text-xs opacity-70 text-right">
                 {timestamp.toLocaleTimeString([], {
@@ -110,7 +112,7 @@ function Message({ id, content, isUser, timestamp }: MessageProps) {
         </div>
 
         {isUser && (
-          <Avatar className="h-10 w-10 ml-3">
+          <Avatar className="h-10 w-10 ml-3 ">
             <AvatarFallback>ME</AvatarFallback>
           </Avatar>
         )}

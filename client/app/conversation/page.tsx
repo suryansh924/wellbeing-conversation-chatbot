@@ -560,7 +560,7 @@ export default function ConversationPage() {
         </div>
       </ScrollArea>
 
-      <div className="border-t border-border p-4">
+      <div className="p-4">
         {hasEnded && (
           <div className=" fixed bottom-4 right-4 z-10">
             <Button
@@ -572,114 +572,124 @@ export default function ConversationPage() {
           </div>
         )}
         <div className="max-w-4xl mx-auto flex items-end gap-2">
-          <div className="flex-1 relative">
-            <Textarea
-              placeholder="Type your message..."
-              className="min-h-[60px] max-h-[200px] resize-none bg-secondary text-foreground transition-all duration-300 w-full"
-              style={{
-                border: inputValue.trim()
-                  ? "2px solid #86BC25"
-                  : "1px solid transparent",
-                borderRadius: "0.375rem",
-                overflowWrap: "break-word",
-                wordWrap: "break-word",
-                whiteSpace: "pre-wrap",
-              }}
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              onKeyDown={handleKeyDown}
-              disabled={isLoading || hasEnded || isRecording}
-            />
-          </div>
-          {/* Microphone button with improved states */}
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={isRecording ? stopRecording : startRecording}
-            style={{
-              backgroundColor:
-                isRecording || isAudioProcessing ? "#86BC25" : "",
-              color: isRecording || isAudioProcessing ? "black" : "",
-              opacity: micPermission === "denied" ? 0.5 : 1,
-              cursor: micPermission === "denied" ? "not-allowed" : "pointer",
-            }}
-            disabled={micPermission === "denied" || isAudioProcessing}
-            className="relative overflow-hidden"
-            title={
-              micPermission === "denied"
-                ? "Microphone access denied"
-                : isRecording
-                ? "Stop recording"
-                : isAudioProcessing
-                ? "Processing audio..."
-                : "Start recording"
-            }
-          >
-            {/* onClick={isRecording ? stopRecording : startRecording}
+          <div className="flex gap-4 relative flex-row w-full items-center bg-[#212835] p-3 rounded-xl">
+            <div className="bg-secondary flex flex-row w-full items-center px-2 rounded-xl">
+              <Textarea
+                placeholder="Type your message..."
+                className="flex-1  min-h-[60px]  resize-none max-h-[200px] bg-secondary text-foreground transition-all duration-300  break-words  "
+                style={{
+                  // border: inputValue.trim()
+                  //   ? "2px solid #86BC25"
+                  //   : "1px solid transparent",
+                  borderRadius: "0.375rem",
+                  overflowWrap: "break-word",
+                  wordWrap: "break-word",
+                  whiteSpace: "pre-wrap",
+                  wordBreak: "break-word"
+                }}
+                value={inputValue}
+                wrap="hard"
+                onChange={(e) => setInputValue(e.target.value)}
+                onKeyDown={handleKeyDown}
+                disabled={isLoading || hasEnded || isRecording}
+              />
+              {/* Microphone button with improved states */}
+              <div className="h-[60px] self-end flex items-center">
+
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={isRecording ? stopRecording : startRecording}
+                  style={{
+                    backgroundColor:
+                      isRecording || isAudioProcessing ? "#86BC25" : "",
+                    color: isRecording || isAudioProcessing ? "black" : "",
+                    opacity: micPermission === "denied" ? 0.5 : 1,
+                    cursor: micPermission === "denied" ? "not-allowed" : "pointer",
+                  }}
+                  disabled={micPermission === "denied" || isAudioProcessing}
+                  className="relative overflow-hidden shrink-0"
+                  title={
+                    micPermission === "denied"
+                      ? "Microphone access denied"
+                      : isRecording
+                        ? "Stop recording"
+                        : isAudioProcessing
+                          ? "Processing audio..."
+                          : "Start recording"
+                  }
+                >
+                  {/* onClick={isRecording ? stopRecording : startRecording}
             className={`${
               isRecording ? "bg-destructive text-destructive-foreground" : ""
-            }`}
-            disabled={isLoading} */}
-            {/* Different states for microphone button */}
-            {micPermission === "pending" ? (
-              <div className="animate-pulse">
-                <Mic className="h-5 w-5" />
+              }`}
+              disabled={isLoading} */}
+                  {/* Different states for microphone button */}
+                  {micPermission === "pending" ? (
+                    <div className="animate-pulse">
+                      <Mic className="h-5 w-5" />
+                    </div>
+                  ) : isRecording ? (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="flex items-end space-x-1">
+                        <div
+                          className="w-1 rounded-t-full transition-all duration-150"
+                          style={{
+                            height: `${recordingLevel * 16}px`,
+                            backgroundColor: "black",
+                          }}
+                        ></div>
+                        <div
+                          className="w-1 rounded-t-full transition-all duration-150"
+                          style={{
+                            height: `${recordingLevel * 24}px`,
+                            backgroundColor: "black",
+                          }}
+                        ></div>
+                        <div
+                          className="w-1 rounded-t-full transition-all duration-150"
+                          style={{
+                            height: `${recordingLevel * 20}px`,
+                            backgroundColor: "black",
+                          }}
+                        ></div>
+                        <div
+                          className="w-1 rounded-t-full transition-all duration-150"
+                          style={{
+                            height: `${recordingLevel * 18}px`,
+                            backgroundColor: "black",
+                          }}
+                        ></div>
+                      </div>
+                    </div>
+                  ) : isAudioProcessing ? (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="h-5 w-5 border-2 border-t-transparent border-black rounded-full animate-spin"></div>
+                    </div>
+                  ) : (
+                    <Mic className="h-5 w-5" />
+                  )}
+                </Button>
               </div>
-            ) : isRecording ? (
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="flex items-end space-x-1">
-                  <div
-                    className="w-1 rounded-t-full transition-all duration-150"
-                    style={{
-                      height: `${recordingLevel * 16}px`,
-                      backgroundColor: "black",
-                    }}
-                  ></div>
-                  <div
-                    className="w-1 rounded-t-full transition-all duration-150"
-                    style={{
-                      height: `${recordingLevel * 24}px`,
-                      backgroundColor: "black",
-                    }}
-                  ></div>
-                  <div
-                    className="w-1 rounded-t-full transition-all duration-150"
-                    style={{
-                      height: `${recordingLevel * 20}px`,
-                      backgroundColor: "black",
-                    }}
-                  ></div>
-                  <div
-                    className="w-1 rounded-t-full transition-all duration-150"
-                    style={{
-                      height: `${recordingLevel * 18}px`,
-                      backgroundColor: "black",
-                    }}
-                  ></div>
-                </div>
-              </div>
-            ) : isAudioProcessing ? (
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="h-5 w-5 border-2 border-t-transparent border-black rounded-full animate-spin"></div>
-              </div>
-            ) : (
-              <Mic className="h-5 w-5" />
-            )}
-          </Button>
-          {/* Send button */}
-          <Button
-            style={{
-              backgroundColor:
-                inputValue.trim() && !isLoading ? "#86BC25" : "gray",
-              opacity: inputValue.trim() && !isLoading ? 1 : 0.5,
-            }}
-            className="hover:bg-opacity-90 text-black"
-            size="icon"
-            onClick={handleSendMessage}
-            disabled={!inputValue.trim() || isLoading}
-          >
-            <Send className="h-5 w-5" />
-          </Button>
+            </div>
+            {/* Send button */}
+
+            <div className="h-[60px] self-end flex items-center">
+              <Button
+                style={{
+                  backgroundColor:
+                    inputValue.trim() && !isLoading ? "green-300" : "green-500",
+                  // opacity: inputValue.trim() && !isLoading ? 1 : 1,  
+                }}
+                className="bg-green-500 hover:bg-green-600 text-black cursor-pointer shrink-0"
+                size="icon"
+                onClick={handleSendMessage}
+                disabled={!inputValue.trim() || isLoading}
+              >
+                <Send className="h-5 w-5" />
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
     </div>

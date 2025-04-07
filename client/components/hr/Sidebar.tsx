@@ -50,17 +50,17 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   }, []);
   
   // When in mobile mode, we want the sidebar to be either fully visible or fully hidden
-  useEffect(() => {
-    if (isMobile) {
-      setIsHidden(collapsed);
-    } else {
-      setIsHidden(false);
-    }
-  }, [collapsed, isMobile]);
+  // useEffect(() => {
+  //   if (isMobile) {
+  //     setIsHidden(collapsed);
+  //   } else {
+  //     setIsHidden(false);
+  //   }
+  // }, [collapsed, isMobile]);
   
-//   useEffect(() => {
-//   setIsHidden(false); // Never hide on mobile
-// }, [collapsed, isMobile]);
+  useEffect(() => {
+  setIsHidden(false); // Never hide on mobile
+}, [collapsed, isMobile]);
  
 
   const scrollToSection = (id: string) => {
@@ -104,12 +104,12 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   return (
     <>
       {/* Mobile overlay backdrop when sidebar is open */}
-      {isMobile && !isHidden && (
+      {/* {isMobile && !isHidden && (
         <div 
           className="fixed inset-0 bg-black/50 z-40 lg:hidden"
           onClick={onToggle}
         />
-      )}
+      )} */}
     
       {/* Sidebar - positioned fixed on mobile, and relative on desktop */}
       <div

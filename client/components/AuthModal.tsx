@@ -258,19 +258,19 @@ export default function AuthModal() {
     e.preventDefault();
     setError("");
     setLoading(true);
-    // try {
-    //   const exists = await checkEmployeeId(regEmployeeId);
-    //   console.log(exists);
-    //   if (!exists) {
-    //     setError("Employee ID not found.");
-    //   } else {
+    try {
+      const exists = await checkEmployeeId(regEmployeeId);
+      console.log(exists);
+      if (!exists) {
+        setError("Employee ID not found.");
+      } else {
     setRegisterStep("registerForm");
-    //   }
-    // } catch {
-    //   setError("Error checking employee ID. Please try again.");
-    // } finally {
-    //   setLoading(false);
-    // }
+      }
+    } catch {
+      setError("Error checking employee ID. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Handle registration submission using Firebase.
