@@ -18,7 +18,7 @@ interface Message {
   id: string;
   content: string;
   isUser: boolean;
-  timestamp: Date;
+  timestamp: string;
   msg_type: string; // normal_question, followup_1, followup_2, insights, welcome, user_msg
 }
 
@@ -29,7 +29,7 @@ interface TypingIndicator {
 export default function ConversationPage() {
   // const server = "http://127.0.0.1:8000";
 
-  const TotalQuestions = 6;
+  const TotalQuestions = 5;
 
   const { employeeData, check_role } = useAuth();
   const router = useRouter();
@@ -110,6 +110,8 @@ export default function ConversationPage() {
             {questionsAsked++; }// Count chatbot messages
             setMessageType(msg.message_type);
           }
+          console.log(msg.time); 
+          
           return {
             id: msg.id.toString(),
             content: msg.content,
@@ -119,8 +121,8 @@ export default function ConversationPage() {
           };
         }
       );
-      console.log("questions Asked:", questionsAsked - 1);
-      setMaxQuestions(TotalQuestions - questionsAsked - 1);
+      console.log("questions Asked:", questionsAsked);
+      // setMaxQuestions(TotalQuestions - questionsAsked - 1);
       console.log(maxQuestions);
       setMessages(formattedMessages);
       // setConversationId(lastConversation.id);
@@ -165,7 +167,7 @@ export default function ConversationPage() {
           id: "welcome",
           content: data.chatbot_response,
           isUser: false,
-          timestamp: new Date(),
+          timestamp: new Date().toTimeString().split(" ")[0],
           msg_type: "welcome",
         },
       ]);
@@ -289,7 +291,7 @@ export default function ConversationPage() {
         id: `bot-${Date.now()}`,
         content: data.insights,
         isUser: false,
-        timestamp: new Date(),
+        timestamp: new Date().toTimeString().split(" ")[0],
         msg_type: "insights",
       };
 
@@ -342,7 +344,7 @@ export default function ConversationPage() {
         id: `user-${Date.now()}`,
         content: inputValue,
         isUser: true,
-        timestamp: new Date(),
+        timestamp: new Date().toTimeString().split(" ")[0],
         msg_type: "user_msg",
       };
       setMessages((prev) => [...prev, userMessage]);
@@ -362,11 +364,11 @@ export default function ConversationPage() {
           // console.log("employee_name:", employee_name);
           // console.log("employee_name:", employee_id);
           // console.log("Conversation_id:", conversationId);
-          console.log("Chat history:", chat_history);
-          console.log("Selected Questions:", selectedQuestions);
-          console.log("Message_type:", message_type);
-          console.log("Input Value:", inputValue);
-          console.log("Conversation ID:", conversationId);
+          // console.log("Chat history:", chat_history);
+          // console.log("Selected Questions:", selectedQuestions);
+          // console.log("Message_type:", message_type);
+          // console.log("Input Value:", inputValue);
+          // console.log("Conversation ID:", conversationId);
         
           
           const response = await axios.post(
@@ -396,18 +398,20 @@ export default function ConversationPage() {
           setIsTyping({ isActive: false });
           setSelectedQuestions(data.question_set);
           setMessageType(data.message_type);
-
+          if (data.message_type === "normal_question") {
+            setMaxQuestions((prev) => prev - 1);
+          }
           const botMessage: Message = {
             id: `bot-${Date.now()}`,
             content: chatbot_response,
             msg_type: data.message_type,
             isUser: false,
-            timestamp: new Date(),
+            timestamp: new Date().toTimeString().split(" ")[0],
           };
 
           setMessages((prev) => [...prev, botMessage]);
 
-          setMaxQuestions(maxQuestions - 1);
+          setMaxQuestions((prev) => prev - 1);
           console.log(maxQuestions);
         } catch (error) {
           console.error("Error sending message:", error);

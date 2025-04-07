@@ -187,75 +187,175 @@ def ingest_csv_data(file_content: bytes, table: str, db: Session):
     elif table == "activity_tracker":
         for row in reader:
             row = {key.lower(): value for key, value in row.items()}
-            activity = ActivityTracker(
+            user=db.query(ActivityTracker).filter(ActivityTracker.employee_id == row.get("employee_id")).first()
+            if user:
+                # Update existing record
+                user.teams_messages_sent = row.get("teams_messages_sent")
+                user.emails_sent = row.get("emails_sent")
+                user.work_hours = row.get("work_hours")
+                user.meetings_attended = row.get("meetings_attended")
+                user.date = row.get("date")
+                db.commit()
+                db.refresh(user)
+                records.append(user)
+            else:
+                activity = ActivityTracker(
                 employee_id=row.get("employee_id"),
                 date=row.get("date"),
                 teams_messages_sent = row.get("teams_messages_sent"),
                 emails_sent = row.get("emails_sent"),
                 work_hours = row.get("work_hours"),
                 meetings_attended = row.get("meetings_attended")
-            )
-            db.add(activity)
-            records.append(activity)
+                )
+                db.add(activity)
+                records.append(activity)
     elif table == "leave":
         for row in reader:
             row = {key.lower(): value for key, value in row.items()}
-            leave = Leave(
-                employee_id=row.get("employee_id"),
-                leave_type=row.get("leave_type", ""),
-                leave_start_date=row.get("leave_start_date", ""),
-                leave_end_date=row.get("leave_end_date", ""),
-                leave_days=parse_int(row.get("leave_days", "0"))
-            )
-            db.add(leave)
-            records.append(leave)
+            user=db.query(Leave).filter(Leave.employee_id == row.get("employee_id")).first()
+            if user:
+                # Update existing record
+                user.leave_type = row.get("leave_type")
+                user.leave_start_date = row.get("leave_start_date")
+                user.leave_end_date = row.get("leave_end_date")
+                user.leave_days = row.get("leave_days")
+                db.commit()
+                db.refresh(user)
+                records.append(user)
+            else:
+                leave = Leave(
+                    employee_id=row.get("employee_id"),
+                    leave_type=row.get("leave_type"),
+                    leave_start_date=row.get("leave_start_date"),
+                    leave_end_date=row.get("leave_end_date"),
+                    leave_days=row.get("leave_days")
+                )
+                db.add(leave)
+                records.append(leave)
     elif table == "onboarding":
         for row in reader:
             row = {key.lower(): value for key, value in row.items()}
-            onboarding = Onboarding(
-                employee_id=row.get("employee_id"),
-                joining_date=row.get("joining_date"),
-                onboarding_feedback=row.get("onboarding_feedback", ""),
-                mentor_assigned = parse_bool(row.get("mentor_assigned")),
-                initial_training_completed=parse_bool(row.get("initial_training_completed"))
-            )
-            db.add(onboarding)
-            records.append(onboarding)
+            # onboarding = Onboarding(
+            #     employee_id=row.get("employee_id"),
+            #     joining_date=row.get("joining_date"),
+            #     onboarding_feedback=row.get("onboarding_feedback", ""),
+            #     mentor_assigned = parse_bool(row.get("mentor_assigned")),
+            #     initial_training_completed=parse_bool(row.get("initial_training_completed"))
+            # )
+            # db.add(onboarding)
+            # records.append(onboarding)
+            user=db.query(Onboarding).filter(Onboarding.employee_id == row.get("employee_id")).first()
+            if user:
+                # Update existing record
+                user.joining_date = row.get("joining_date")
+                user.onboarding_feedback = row.get("onboarding_feedback")
+                user.mentor_assigned = parse_bool(row.get("mentor_assigned"))
+                user.initial_training_completed = parse_bool(row.get("initial_training_completed"))
+                db.commit()
+                db.refresh(user)
+                records.append(user)
+            else:
+                onboarding = Onboarding(
+                    employee_id=row.get("employee_id"),
+                    joining_date=row.get("joining_date"),
+                    onboarding_feedback=row.get("onboarding_feedback", ""),
+                    mentor_assigned = parse_bool(row.get("mentor_assigned")),
+                    initial_training_completed=parse_bool(row.get("initial_training_completed"))
+                )
+                db.add(onboarding)
+                records.append(onboarding)
     elif table == "performance":
         for row in reader:
             row = {key.lower(): value for key, value in row.items()}
-            performance = Performance(
-                employee_id=row.get("employee_id"),
-                review_period=row.get("review_period"),
-                performance_rating=parse_int(row.get("performance_rating", "0")),
-                manager_feedback=row.get("manager_feedback", ""),
-                promotion_consideration = parse_bool(row.get("promotion_consideration"))
-            )
-            db.add(performance)
-            records.append(performance)
+            # performance = Performance(
+            #     employee_id=row.get("employee_id"),
+            #     review_period=row.get("review_period"),
+            #     performance_rating=parse_int(row.get("performance_rating", "0")),
+            #     manager_feedback=row.get("manager_feedback", ""),
+            #     promotion_consideration = parse_bool(row.get("promotion_consideration"))
+            # )
+            # db.add(performance)
+            # records.append(performance)
+            user=db.query(Performance).filter(Performance.employee_id == row.get("employee_id")).first()
+            if user:
+                # Update existing record
+                user.review_period = row.get("review_period")
+                user.performance_rating = parse_int(row.get("performance_rating", "0"))
+                user.manager_feedback = row.get("manager_feedback")
+                user.promotion_consideration = parse_bool(row.get("promotion_consideration"))
+                db.commit()
+                db.refresh(user)
+                records.append(user)
+            else:
+                performance = Performance(
+                    employee_id=row.get("employee_id"),
+                    review_period=row.get("review_period"),
+                    performance_rating=parse_int(row.get("performance_rating", "0")),
+                    manager_feedback=row.get("manager_feedback", ""),
+                    promotion_consideration = parse_bool(row.get("promotion_consideration"))
+                )
+                db.add(performance)
+                records.append(performance)
     elif table == "rewards":
         for row in reader:
             row = {key.lower(): value for key, value in row.items()}
-            rewards = Rewards(
-                employee_id=row.get("employee_id"),
-                award_date=row.get("award_date"),
-                award_type=row.get("award_type", ""),
-                reward_points=parse_int(row.get("reward_points", "0")),
-            )
-            db.add(rewards)
-            records.append(rewards)
+            # rewards = Rewards(
+            #     employee_id=row.get("employee_id"),
+            #     award_date=row.get("award_date"),
+            #     award_type=row.get("award_type", ""),
+            #     reward_points=parse_int(row.get("reward_points", "0")),
+            # )
+            # db.add(rewards)
+            # records.append(rewards)
+            user=db.query(Rewards).filter(Rewards.employee_id == row.get("employee_id")).first()
+            if user:
+                # Update existing record
+                user.award_date = row.get("award_date")
+                user.award_type = row.get("award_type")
+                user.reward_points = parse_int(row.get("reward_points", "0"))
+                db.commit()
+                db.refresh(user)
+                records.append(user)
+            else:
+                rewards = Rewards(
+                    employee_id=row.get("employee_id"),
+                    award_date=row.get("award_date"),
+                    award_type=row.get("award_type", ""),
+                    reward_points=parse_int(row.get("reward_points", "0"))
+                )
+                db.add(rewards)
+                records.append(rewards)
     elif table == "vibemeter":
         for row in reader:
             row = {key.lower(): value for key, value in row.items()}
-            vibemeter = Vibemeter(
-                employee_id=row.get("employee_id"),
-                response_date=row.get("response_date"),
-                emotion_zone=row.get("emotion_zone", ""),
-                vibe_score=row.get("vibe_score")
-            )
-            db.add(vibemeter)
-            records.append(vibemeter)
+            # vibemeter = Vibemeter(
+            #     employee_id=row.get("employee_id"),
+            #     response_date=row.get("response_date"),
+            #     emotion_zone=row.get("emotion_zone", ""),
+            #     vibe_score=row.get("vibe_score")
+            # )
+            # db.add(vibemeter)
+            # records.append(vibemeter)
+            user=db.query(Vibemeter).filter(Vibemeter.employee_id == row.get("employee_id")).first()
+            if user:
+                # Update existing record
+                user.response_date = row.get("response_date")
+                user.emotion_zone = row.get("emotion_zone")
+                user.vibe_score = parse_int(row.get("vibe_score", "0"))
+                db.commit()
+                db.refresh(user)
+                records.append(user)
+            else:
+                vibemeter = Vibemeter(
+                    employee_id=row.get("employee_id"),
+                    response_date=row.get("response_date"),
+                    emotion_zone=row.get("emotion_zone", ""),
+                    vibe_score=parse_int(row.get("vibe_score", "0"))
+                )
+                db.add(vibemeter)
+                records.append(vibemeter)
     else:
+
         raise ValueError("Invalid table specified for ingestion.")
     
     db.commit()
