@@ -14,13 +14,14 @@ class Master(Base):
     # password = Column(String, default="")                           # Hashed password.
     feature_vector = Column(MutableList.as_mutable(JSON), default=[])      # Default: empty list.
     is_selected = Column(Boolean, default=False)                        # Default: not selected for conversation.
-    shap_values = Column(MutableList.as_mutable(JSON), default=[])      # Default: empty list.
+    # shap_values = Column(MutableList.as_mutable(JSON), default=[])      # Default: empty list.
     shap_nature = Column(MutableDict.as_mutable(JSON), default={})      # Default: empty list.
     # report = Column(Text, default="")                                   # Default: empty string.
     sentimental_score = Column(Integer, default=0)                      # Default: 0.
     is_Flagged = Column(Boolean, default=False)                        # Default: not resolved.
     role = Column(String, default="employee")                           # Default: "employee".
     conversation_completed = Column(Boolean, default = False)
+    shap_values = Column(MutableDict.as_mutable(JSON), default={})      # Default: empty list.
     # work_hours = Column(Float, default=0.0)
     # leave_days = Column(Integer, default=0)
     # leave_type = Column(String, default="")

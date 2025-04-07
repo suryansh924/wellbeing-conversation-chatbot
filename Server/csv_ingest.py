@@ -319,7 +319,7 @@ def ingest_shap_values(file_content: bytes, db: Session) -> int:
         reader = csv.DictReader(io.StringIO(decoded))
         
         # Validate required columns
-        required_columns = {"employee_id", "aggregated_shap_features", "is_selected"}
+        required_columns = {"employee_id", "aggregated_shap_features"}
         if not required_columns.issubset(reader.fieldnames):
             missing_cols = required_columns - set(reader.fieldnames)
             raise ValueError(f"Missing required columns: {missing_cols}")
@@ -332,8 +332,8 @@ def ingest_shap_values(file_content: bytes, db: Session) -> int:
             # print(f"Features for {employee_id}: {features}")
             
             # Convert is_selected to boolean
-            is_selected = row["is_selected"].strip().lower() == "true"
-            print(f"Is selected for {employee_id}: {is_selected}")
+            # is_selected = row["is_selected"].strip().lower() == "true"
+            # print(f"Is selected for {employee_id}: {is_selected}")
 
             # Query the existing record by employee_id
             master_record = db.query(Master).filter(Master.employee_id == employee_id).first()
@@ -341,9 +341,9 @@ def ingest_shap_values(file_content: bytes, db: Session) -> int:
 
             if master_record:
                 # Update the existing record (assuming column name is shap_values)
-                master_record.new_shap_values = features
+                master_record.shap_values = features
                 print(f"Updated shap_values for {employee_id}")
-                master_record.is_selected = is_selected
+                # master_record.is_selected = is_selected
                 updated_count += 1
                 print(f"Updated record for {employee_id}")
             else:
@@ -352,7 +352,7 @@ def ingest_shap_values(file_content: bytes, db: Session) -> int:
                 new_record = Master(
                     employee_id=employee_id,
                     new_shap_values=features,
-                    is_selected=is_selected
+                    # is_selected=is_selected
                 )
                 db.add(new_record)
                 updated_count += 1

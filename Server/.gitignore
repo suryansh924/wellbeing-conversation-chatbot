@@ -6,3 +6,4 @@
 venv/
 .zshrc
 __pycache__/
+vectorstore.db/
