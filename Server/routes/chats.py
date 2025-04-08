@@ -381,13 +381,9 @@ def generate(request: PromptRequest):
 async def transcribe_audio(audio: UploadFile = File(...)):
     """Convert speech audio to text using Deepgram"""
     if not DEEPGRAM_API_KEY:
-        raise HTTPException(status_code=500, detail="Deepgram API key not configured")
-
-    
+        raise HTTPException(status_code=500, detail="Deepgram API key not configured") 
     try:
-
         audio_content = await audio.read()
-        # print("Audio content length:", len(audio_content))
         # Send to Deepgram
         async with httpx.AsyncClient() as client:
             response = await client.post(
@@ -423,19 +419,15 @@ async def text_to_speech(request: PromptRequest):
     if not DEEPGRAM_API_KEY:
         raise HTTPException(status_code=500, detail="Deepgram API key not configured")
     try:
-        # Set up the request payload for Deepgram API
         payload = {
             "text": request.prompt,
         }
-        
         # Set up headers for Deepgram API request
         headers = {
             "Authorization": f"Token {DEEPGRAM_API_KEY}",
             "Content-Type": "application/json"
         }
-        
         # Make the request to Deepgram
-        # print("Sending request to Deepgram TTS API...",request.prompt)
         async with httpx.AsyncClient() as client:
             response = await client.post(
                 f"https://api.deepgram.com/v1/speak?model=aura-asteria-en&gender=female",
@@ -459,8 +451,6 @@ async def text_to_speech(request: PromptRequest):
                 )
             
             # # Return the audio stream
-            # print("Received response from Deepgram TTS API",response.status_code)
-            # print("Response content:", response.content[:100])
             return StreamingResponse(
                 io.BytesIO(response.content),
                 media_type="audio/mp3",

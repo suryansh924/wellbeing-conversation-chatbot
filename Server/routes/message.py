@@ -8,7 +8,7 @@ from langchain.schema import Document
 import os
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
-from groq import Groq
+# from groq import Groq
 from langchain_huggingface import HuggingFaceEmbeddings
 from question_bank import question_bank
 import random
@@ -29,6 +29,8 @@ def retrieve_relevant_questions(user_query, questions_set, top_k=20):
         # nltk.download('punkt_tab')
         embeddings = HuggingFaceEmbeddings(
             model_name="sentence-transformers/all-MiniLM-L6-v2", encode_kwargs={"normalize_embeddings": True})
+        
+
         documents = []
         for question in questions_set:
             documents.extend(word_tokenize(question))
@@ -101,10 +103,10 @@ def generate_follow_up(user_response):
     """Generate 1 follow-up questions based on the user's response."""
     try:
         system_prompt = (
-        "You are a thoughtful assistant skilled in asking meaningful follow-up questions that deepen conversations. "
-        "Your job is to generate exactly ONE insightful follow-up question based on the user's latest response. "
-        "Return only the question—do not include any introductions, explanations, or additional text. "
-        "The question should encourage deeper thinking and explore a different angle from the user's previous response."
+            "You are a thoughtful assistant skilled in asking meaningful follow-up questions that deepen conversations. "
+            "Your job is to generate exactly ONE insightful follow-up question based on the user's latest response. "
+            "Return only the question—do not include any introductions, explanations, or additional text. "
+            "The question should encourage deeper thinking and explore a different angle from the user's previous response."
         )
 
         user_prompt = f"""
@@ -116,8 +118,6 @@ def generate_follow_up(user_response):
         - Do not repeat the user's wording exactly.
         - Do not add any commentary or explanation—just return the question as plain text.
         """
-
-
 
         follow_ups = chat_with_gpt4o(system_prompt, user_prompt)
         return follow_ups.strip()  # Return the first follow-up question
@@ -137,10 +137,10 @@ def select_next_question(chat_history, question_set):
     try:
 
         system_prompt = (
-    "You are an intelligent assistant that guides a conversation by selecting the most relevant next question from a given list. "
-    "You must consider the flow of the conversation and choose the most contextually appropriate question. "
-    "Return only the selected question as plain text. Do not include any explanation, commentary, or formatting."
-)
+            "You are an intelligent assistant that guides a conversation by selecting the most relevant next question from a given list. "
+            "You must consider the flow of the conversation and choose the most contextually appropriate question. "
+            "Return only the selected question as plain text. Do not include any explanation, commentary, or formatting."
+        )
         user_prompt = f"""
 Here is the conversation so far:
 {chat_history}
@@ -153,9 +153,6 @@ Instructions:
 - DO NOT include any explanation or extra text.
 - Return the question as plain text only.
 """
-
-        
-
 
         next_question = chat_with_gpt4o(system_prompt, user_prompt)
 
@@ -177,58 +174,35 @@ Instructions:
 def chatbot_conversation(shap_values, chat_history, user_response, message_type, question_set):
     """Handles the chatbot conversation logic."""
 
-    print("🤖: Hi! Let's start the conversation.")
-    # print("Shap Values: ", shap_values)
-    # print("Chat History: ", chat_history)
-    # print("User Response: ", user_response)
-    # print("Message Type: ", message_type)
-
-    # Start with the first question
-
     try:
         if message_type == "welcome":
-            # print("log")
             first_shap_value = next(iter(shap_values))
-            # print("First Shap Value: ", first_shap_value)
             current_shap_questions = question_bank[first_shap_value].get(
                 "questions", [])
-        # chose a random
-            # print("Current Shap Questions: ", current_shap_questions)
             current_question = random.choice(current_shap_questions)
-            # print(f"🤖: {current_question}")
             asked_questions.add(current_question)
-
             return current_question, "normal_question"
-        # print(f"🤖: {current_question}")
 
         if message_type == "followup_1" or message_type == "normal_question":
             print(f"User Response1: {user_response}")
             contradiction_follow_up = detect_contradiction(
                 user_response, chat_history)
-            print(f"🤖: {contradiction_follow_up}")
 
             if contradiction_follow_up != "" and contradiction_follow_up != None and contradiction_follow_up != "None.":
-                print(f"🤖: {contradiction_follow_up}")
                 asked_questions.add(contradiction_follow_up)
                 if message_type == "normal_question":
                     return contradiction_follow_up, "followup_1"
                 elif message_type == "followup_1":
                     return contradiction_follow_up, "followup_2"
             else:
-                # Generate 2 follow-up questions
                 print(f"User Response2: {user_response}")
                 follow_up_question = generate_follow_up(user_response)
-                print(f"🤖: {follow_up_question}")
                 if message_type == "normal_question":
                     return follow_up_question, "followup_1"
                 elif message_type == "followup_1":
                     return follow_up_question, "followup_2"
-            # return follow_up_question
 
-        # Select the next main question
         next_question = select_next_question(chat_history, question_set)
-
-        # print(f"🤖: {next_question}")
         asked_questions.add(next_question)
         # chat_history.append(AIMessage(content=next_question))
         return next_question, "normal_question"

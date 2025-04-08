@@ -204,7 +204,7 @@ export default function AuthModal() {
     try {
       const profile = await fetchEmployeeProfile();
       if (profile.is_selected && !profile.conversation_completed) {
-        router.push("/conversation/");
+        router.push("/conversation");
       } else {
         router.push("/dashboard");
       }

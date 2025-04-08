@@ -149,7 +149,8 @@ export default function ConversationPage() {
                     id={message.id.toString()}
                     content={message.content}
                     isUser={message.sender_type !== "chatbot"}
-                    timestamp={new Date(message.timestamp)}
+                    timestamp={message.timestamp}
+                    msg_type={message.msg_type}
                   />
                 ))}
               </div>
