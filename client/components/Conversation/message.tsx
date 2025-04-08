@@ -89,7 +89,7 @@ function Message({
                 : "bg-secondary text-foreground rounded-bl-none"
             } `}
           >
-            <div className="w-full flex wrap break-all">
+            <div className="w-full flex wrap break-word">
               {!isUser && (content === "" || isLoading) ? (
                 <div className="flex items-center">
                   <div className="typing-indicator">

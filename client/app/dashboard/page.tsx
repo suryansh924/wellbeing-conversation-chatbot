@@ -56,7 +56,9 @@ export default function DashboardPage() {
         }
       } catch (error) {
         console.error("Authentication error:", error);
-        toast.error("Authentication failed. Redirecting to login.");
+        toast.error("Authentication failed. Redirecting to login.", {
+          id: "auth-failed-redirect"
+        });
         router.push("/"); // Redirect on any auth error
       }
     };
@@ -110,15 +112,21 @@ export default function DashboardPage() {
           }));
 
         setPastConversations(formattedConversations);
-        toast.success("Conversations loaded successfully.");
+        toast.success("Conversations loaded successfully.", {
+          id: "conversations-loaded",
+        });
       } else {
         // If no conversations returned, set empty array
         setPastConversations([]);
-        toast.info("No conversations found.");
+        toast.info("No conversations found.", {
+          id: "no-conversations-found",
+        });
       }
     } catch (error) {
       console.error("Error fetching conversations:", error);
-      toast.error("Failed to load conversations.");
+      toast.error("Failed to load conversations.", {
+        id: "conversation-load-error",
+      });
       setPastConversations([]);
     } finally {
       setIsLoading(false);
@@ -208,44 +216,44 @@ export default function DashboardPage() {
             </p>
           </div>
 
-          {/* Stats Cards - keep your existing code */}
+          {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-            <div className="stats-card">
+            <div className="stats-card bg-[#004B23] text-white">
               <div className="flex items-center gap-4">
                 <Calendar className="stats-icon" />
                 <div>
-                  <h3 className="text-foreground/80 text-sm font-medium">
+                  <h3 className="text-white/80 text-sm font-medium">
                     Next Check-in
                   </h3>
-                  <p className="text-foreground text-xl font-semibold">
+                  <p className="text-white text-xl font-semibold">
                     Not scheduled yet
                   </p>
                 </div>
               </div>
             </div>
 
-            <div className="stats-card">
+            <div className="stats-card bg-[#004B23] text-white">
               <div className="flex items-center gap-4">
                 <MessageSquare className="stats-icon" />
                 <div>
-                  <h3 className="text-foreground/80 text-sm font-medium">
+                  <h3 className="text-white/80 text-sm font-medium">
                     Total Conversations
                   </h3>
-                  <p className="text-foreground text-xl font-semibold">
+                  <p className="text-white text-xl font-semibold">
                     {pastConversations.length}
                   </p>
                 </div>
               </div>
             </div>
 
-            <div className="stats-card">
+            <div className="stats-card bg-[#004B23] text-white">
               <div className="flex items-center gap-4">
                 <Clock className="stats-icon" />
                 <div>
-                  <h3 className="text-foreground/80 text-sm font-medium">
+                  <h3 className="text-white/80 text-sm font-medium">
                     Last Activity
                   </h3>
-                  <p className="text-foreground text-xl font-semibold">
+                  <p className="text-white text-xl font-semibold">
                     {pastConversations.length > 0
                       ? new Date(
                           pastConversations[0].lastMessage.timestamp

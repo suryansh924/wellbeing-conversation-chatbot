@@ -21,6 +21,7 @@ import { app } from "@/firebase/config";
 import { useRouter } from "next/navigation";
 import {server} from "@/utils";
 import axios from "axios";
+import { toast } from "sonner";
 
 const auth = getAuth(app);
 
@@ -226,11 +227,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = async () => {
-    await signOut(auth);
-    setUser(null);
-    setIsLogged(false);
-    localStorage.removeItem("access_token");
-    router.push("/");
+    toast.loading("Logging out...");
+    try {
+      await signOut(auth);
+      setUser(null);
+      setIsLogged(false);
+      localStorage.removeItem("access_token");
+      toast.dismiss();
+      toast.success("Logged out successfully");
+      router.push("/");
+    } catch (error) {
+      toast.dismiss();
+      toast.error("Failed to log out");
+      console.error("Logout error:", error);
+    }
   };
 
   return (

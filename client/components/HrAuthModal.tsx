@@ -153,15 +153,14 @@ export default function HRLoginModal() {
       // Call the HR login function
       const response = await signInHR(LoginformData.email, LoginformData.password);
       if (response.token) {
-        // Dismiss loading toast and show success
+        // Dismiss loading toast
         toast.dismiss("hr-login-attempt");
-        toast.success("HR Login Successful", {
-          description: "Welcome back! Accessing HR dashboard...",
-        });
-
+        
+        // Close the modal after successful login
+        setOpen(false);
+        
         // Redirect to HR Dashboard on success
         router.push("/hr-dashboard");
-        setOpen(false); // Close the modal after successful login
       }
     } catch (err: any) {
       // Dismiss loading toast and show error
@@ -181,7 +180,7 @@ export default function HRLoginModal() {
       {/* Trigger button to open the modal */}
       <DialogTrigger asChild>
         <AnimatedButton
-          className="bg-white border-1 border-black/50 text-black cursor-pointer text-lg font-semibold px-10 py-4 h-auto rounded-full shadow-md hover:shadow-lg hover:bg-white/95 hover:border-black/90 transition-all duration-300 group relative overflow-hidden scale-75 sm:scale-100"
+          className="bg-white border-1 border-black/50 text-black cursor-pointer text-lg font-semibold px-10 py-4 h-auto rounded-full shadow-md hover:shadow-lg hover:bg-white/95 hover:border-black/90 transition-all duration-300 group relative overflow-hidden md:scale-90 lg:scale-100 scale-75 "
         >
           Login as HR
         </AnimatedButton>
