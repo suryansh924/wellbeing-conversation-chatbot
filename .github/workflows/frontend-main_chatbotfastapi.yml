@@ -29,13 +29,13 @@ jobs:
 
       - name: Create and start virtual environment
         run: |
-          cd server
+          cd Server
           python -m venv venv
           source venv/bin/activate
       
       - name: Install dependencies
         run: |
-          cd server
+          cd Server
           pip install -r requirements.txt
         
         
