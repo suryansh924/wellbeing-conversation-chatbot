@@ -20,7 +20,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Change to server directory
-        run: cd server
+        run: cd Server
 
       - name: Set up Python version
         uses: actions/setup-python@v5
