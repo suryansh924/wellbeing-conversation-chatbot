@@ -19,6 +19,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Change to server directory
+        run: cd server
+
       - name: Set up Python version
         uses: actions/setup-python@v5
         with:
