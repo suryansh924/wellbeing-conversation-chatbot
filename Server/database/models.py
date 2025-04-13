@@ -16,7 +16,7 @@ class Master(Base):
     is_selected = Column(Boolean, default=False)                        # Default: not selected for conversation.
     # shap_values = Column(MutableList.as_mutable(JSON), default=[])      # Default: empty list.
     shap_nature = Column(MutableDict.as_mutable(JSON), default={})      # Default: empty list.
-    # report = Column(Text, default="")                                   # Default: empty string.
+    report = Column(Text, default="")                                   # Default: empty string.
     sentimental_score = Column(Integer, default=0)                      # Default: 0.
     is_Flagged = Column(Boolean, default=False)                        # Default: not resolved.
     role = Column(String, default="employee")                           # Default: "employee".

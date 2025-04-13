@@ -19,7 +19,7 @@ export default function ConversationPage() {
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-  // Check if user is authenticated
+    // Check if user is authenticated
     let isMounted = true;
     async function checkProfile() {
       try {
@@ -139,8 +139,8 @@ export default function ConversationPage() {
                     id={message.id.toString()}
                     content={message.content}
                     isUser={message.sender_type !== "chatbot"}
-                    timestamp={message.timestamp}
-                    msg_type={message.msg_type}
+                    time={message.time}
+                    msg_type={message.message_type}
                   />
                 ))}
               </div>

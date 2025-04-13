@@ -91,7 +91,6 @@ async def start_conversation(request: Request, db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail="Error starting conversation")
 
 
-
 @router.post("/message")
 async def send_message(request:Request,db: Session = Depends(get_db)):
     """
@@ -244,6 +243,7 @@ def get_messages(conversation_id:str,request:Request,db:Session=Depends(get_db))
             raise HTTPException(status_code=401, detail="Unauthorized access")
         
         conversation = db.query(Conversation).filter(Conversation.id == conversation_id).first()
+        print(conversation)
 
         if not conversation:
             raise HTTPException(status_code=404, detail="Conversation not found")
@@ -328,6 +328,7 @@ def get_insights(conversation_id: int, request:Request,db: Session = Depends(get
             role = "Employee" if msg.sender_type == "employee" else "Chatbot"
             conversation_history += f"{role}: {msg.content}\n"
 
+        system_prompt = ("You are an empathetic and analytical assistant. Your task is to carefully analyze workplace conversations and generate thoughtful, structured insights. Focus on identifying mood, concerns, key issues, and offer actionable suggestions for improvement. Present your response clearly and professionally.")
         # 4. Create an insightful prompt for openai
         insight_prompt = (
             f"Here is a conversation between the employee ({conversation.employee_name}) and a chatbot:\n\n"
@@ -339,7 +340,7 @@ def get_insights(conversation_id: int, request:Request,db: Session = Depends(get
             f"- Format the insights in a clear and organized manner."
         )
         # 5. Generate insights using Gemini
-        insights = chat_with_gpt4o(insight_prompt)
+        insights = chat_with_gpt4o(system_prompt, insight_prompt)
 
         chatbot_message = Message(
             content=insights,

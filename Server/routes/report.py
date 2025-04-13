@@ -672,7 +672,7 @@ async def get_employee_report(request: Request,db: Session = Depends(get_db)):
         pdf_bytes = pdf_file.getvalue()
 
         # S3 Upload
-        filename = f"report_{request.employee_id}_{request.conversation_id}.pdf"
+        filename = f"report_{emp_id}_{conversation_id}.pdf"
         s3_url = upload_pdf_to_s3(pdf_bytes, filename)
 
         # Close PDF buffer
@@ -681,7 +681,7 @@ async def get_employee_report(request: Request,db: Session = Depends(get_db)):
         if not conversation:
             raise HTTPException(status_code=404, detail="Conversation not found")
         conversation.report = s3_url
-        db.commit(conversation)
+        db.commit()
         db.refresh()
 
         return {"message": "PDF report uploaded successfully", "pdf_url": s3_url}

@@ -12,18 +12,9 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { toast } from "sonner"; // Import toast from sonner
 
 export interface Conversation {
-  id: string;
-  name: string;
-  participants: { id: string; name: string; avatar: string; status: string }[];
-  lastMessage: {
-    id: string;
-    content: string;
-    timestamp: Date;
-    sender: { id: string; name: string; avatar: string; status: string };
-    status: string;
-  };
-  isGroup: boolean;
-  unreadCount: number;
+  conversation_id: string;
+  date: string;
+  time: string;
 }
 
 export default function DashboardPage() {
@@ -52,12 +43,12 @@ export default function DashboardPage() {
         if (!profile || profile.role !== "employee") {
           router.push("/"); // Redirect if invalid profile or wrong role
         } else {
-          fetchEmployeeConversations(profile.employee_id);
+          fetchEmployeeConversations();
         }
       } catch (error) {
         console.error("Authentication error:", error);
         toast.error("Authentication failed. Redirecting to login.", {
-          id: "auth-failed-redirect"
+          id: "auth-failed-redirect",
         });
         router.push("/"); // Redirect on any auth error
       }
@@ -66,52 +57,13 @@ export default function DashboardPage() {
     checkAuth();
   }, [router]);
 
-  const fetchEmployeeConversations = async (employeeId: string) => {
+  const fetchEmployeeConversations = async () => {
     setIsLoading(true);
     try {
-      const response = await chatService.getEmployeeConversations(employeeId);
+      const response = await chatService.getEmployeeConversations();
 
-      if (
-        response &&
-        response.conversations &&
-        response.conversations.length > 0
-      ) {
-        // Transform API data to match our Conversation interface
-        const formattedConversations: Conversation[] =
-          response.conversations.map((conv: ApiConversation) => ({
-            id: conv.id.toString(),
-            name: `Conversation on ${new Date(conv.date).toLocaleDateString()}`,
-            participants: [
-              {
-                id: conv.employee_id,
-                name: conv.employee_name,
-                avatar: "",
-                status: "online",
-              },
-              {
-                id: "bot1",
-                name: "Deloitte Connect",
-                avatar: "/favicon.ico",
-                status: "online",
-              },
-            ],
-            lastMessage: {
-              id: "msg1",
-              content: "View this conversation...",
-              timestamp: new Date(`${conv.date}T${conv.time}`),
-              sender: {
-                id: "bot1",
-                name: "Deloitte Connect",
-                avatar: "/favicon.ico",
-                status: "online",
-              },
-              status: "read",
-            },
-            isGroup: false,
-            unreadCount: 0,
-          }));
-
-        setPastConversations(formattedConversations);
+      if (response) {
+        setPastConversations(response);
         toast.success("Conversations loaded successfully.", {
           id: "conversations-loaded",
         });
@@ -255,9 +207,7 @@ export default function DashboardPage() {
                   </h3>
                   <p className="text-white text-xl font-semibold">
                     {pastConversations.length > 0
-                      ? new Date(
-                          pastConversations[0].lastMessage.timestamp
-                        ).toLocaleDateString()
+                      ? pastConversations[0].time
                       : "No recent activity"}
                   </p>
                 </div>
@@ -283,23 +233,20 @@ export default function DashboardPage() {
                 <div className="space-y-4">
                   {pastConversations.map((conversation) => (
                     <div
-                      key={conversation.id}
+                      key={conversation.conversation_id}
                       className="stats-card p-4 hover:bg-surface/50 rounded-lg transition-colors ease-in-out duration-200 cursor-pointer border border-border/30"
-                      onClick={() => handleConversationClick(conversation.id)}
+                      onClick={() =>
+                        handleConversationClick(conversation.conversation_id)
+                      }
                     >
                       <div className="flex justify-between items-start">
                         <div>
                           <h3 className="font-medium text-foreground">
-                            {conversation.name}
+                            {conversation.date}
                           </h3>
-                          <p className="text-sm text-foreground/70 mt-1 line-clamp-1">
-                            {conversation.lastMessage.content}
-                          </p>
                         </div>
                         <span className="text-xs text-foreground/50">
-                          {new Date(
-                            conversation.lastMessage.timestamp
-                          ).toLocaleDateString()}
+                          {conversation.time}
                         </span>
                       </div>
                     </div>

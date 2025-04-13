@@ -40,6 +40,7 @@ const HRDashboard: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState<string>("");
 
   const [employees, setEmployees] = useState<Employee[]>([]);
+  const [selectedEmployees, setSelectedEmployees] = useState<Employee[]>([]);
   const [employeesWithReports, setEmployeesWithReports] = useState<Employee[]>(
     []
   );
@@ -55,14 +56,14 @@ const HRDashboard: React.FC = () => {
   const reportsRef = useRef<HTMLDivElement | null>(null);
 
   const router = useRouter();
-  const { fetchHRProfile, hrData, check_role } = useAuth();
+  const { fetchHRProfile, hrData } = useAuth();
 
   useEffect(() => {
     const checkAuth = async () => {
       setLoading(true);
       try {
         const profile = await fetchHRProfile();
-        if (!check_role("hr")) {
+        if (!profile) {
           toast.error("Authentication failed", {
             description: "You are not authorized to access the HR dashboard",
             duration: 5000,
@@ -94,7 +95,6 @@ const HRDashboard: React.FC = () => {
   }, []);
 
   const fetchAllEmployees = async () => {
-    console.log("Fetching All Selected Employees");
     if (dataLoadingStatus.employees) return; // Prevent duplicate API calls
 
     try {
@@ -105,11 +105,12 @@ const HRDashboard: React.FC = () => {
       toast.loading("Loading employee data...", { id: "employees-loading" });
 
       const response = await axios.get(`${server}/api/data/employees`);
+      setEmployees(response.data.employees);
       const selectedEmployees = response.data.employees.filter(
         (employee: any) => employee.Is_Selected === true
       );
       console.log("Selected Employee data:", selectedEmployees);
-      setEmployees(selectedEmployees);
+      setSelectedEmployees(selectedEmployees);
       setError(null);
 
       // Dismiss loading toast and show success
@@ -160,7 +161,7 @@ const HRDashboard: React.FC = () => {
       toast.success("Reports loaded", {
         description: `${response.data.length} conversation reports retrieved`,
         duration: 3000,
-        id: "reports-success" // Adding a unique ID to prevent duplicates
+        id: "reports-success", // Adding a unique ID to prevent duplicates
       });
     } catch (error) {
       console.error("Error fetching employees with reports:", error);
@@ -211,7 +212,7 @@ const HRDashboard: React.FC = () => {
       toast.success("Report generated", {
         description: `New report for employee has been created`,
         duration: 3000,
-        id: "report-gen-success", 
+        id: "report-gen-success",
       });
 
       // Refresh the reports data
@@ -375,7 +376,7 @@ const HRDashboard: React.FC = () => {
               ) : (
                 <EmployeeReports
                   searchQuery={searchQuery}
-                  employees={employees}
+                  employees={selectedEmployees}
                   employeesWithReports={employeesWithReports}
                   onRegenerateReport={regenerateReport}
                   isGenerating={dataLoadingStatus.generating}

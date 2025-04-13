@@ -19,7 +19,7 @@ import {
 } from "firebase/auth";
 import { app } from "@/firebase/config";
 import { useRouter } from "next/navigation";
-import {server} from "@/utils";
+import { server } from "@/utils";
 import axios from "axios";
 import { toast } from "sonner";
 
@@ -87,15 +87,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (decoded.role === "hr") {
             await fetchHRProfile();
           } else if (decoded.role === "employee") {
-            console.log("Fetching Employee Profile Based on role :", decoded.role)
-            const profile=await fetchEmployeeProfile();
+            console.log(
+              "Fetching Employee Profile Based on role :",
+              decoded.role
+            );
+            const profile = await fetchEmployeeProfile();
             console.log("Employee Profile:", profile);
-            
-            if(profile.is_selected && profile.conversation_completed){
+
+            if (profile.is_selected && profile.conversation_completed) {
               router.push("/conversation");
-            }
-            else router.push("/dashboard");
-            
+            } else router.push("/dashboard");
           }
         }
       } catch (error) {
@@ -107,8 +108,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     fetchData();
   }, []);
 
-  const check_role = (role:string) => {
-    const token = typeof window !== "undefined" && localStorage.getItem("access_token");
+  const check_role = (role: string) => {
+    const token =
+      typeof window !== "undefined" && localStorage.getItem("access_token");
     if (!token) return false;
     try {
       const decoded = JSON.parse(atob(token.split(".")[1]));
@@ -184,8 +186,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const fetchEmployeeProfile = async () => {
     try {
       const token = localStorage.getItem("access_token");
-      console.log(token);
-      const res= await axios.get(`${server}/api/user/employee`, {
+      const res = await axios.get(`${server}/api/user/employee`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },

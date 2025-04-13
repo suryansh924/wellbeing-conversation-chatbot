@@ -5,28 +5,31 @@ import { server } from "@/utils";
 import axios from "axios";
 import { Button } from "@/components/ui/button";
 import { Volume2, VolumeX } from "lucide-react";
+import ReactMarkdown from "react-markdown";
+
 type MessageProps = {
   id: string;
   content: string;
   isUser: boolean;
-  timestamp: string;
+  time: string;
   msg_type: string;
 };
 
-function Message({
-  id,
-  content,
-  isUser,
-  timestamp,
-  msg_type = "",
-}: MessageProps) {
+function Message({ id, content, isUser, time, msg_type = "" }: MessageProps) {
   const audioPlayerRef = React.useRef<HTMLAudioElement>(null);
   const [isSpeakerOn, setIsSpeakerOn] = React.useState(false);
   const [audioUrl, setAudioUrl] = React.useState<string | null>(null);
-  const [hours, minutes] = timestamp.split(":");
   const date = new Date();
-  date.setHours(parseInt(hours), parseInt(minutes));
+  if (time) {
+    const [hours, minutes] = time.split(":");
+    date.setHours(parseInt(hours), parseInt(minutes));
+  }
   const [isLoading, setIsLoading] = React.useState(!isUser && content === "");
+
+  // Process content to remove extra quotes and braces
+  const cleanContent = String(content || "")
+    .replace(/^[{'"`]+/, "")
+    .replace(/[}'"`]+$/, "");
 
   const SpeakAloud = async () => {
     setIsSpeakerOn(true);
@@ -35,11 +38,11 @@ function Message({
         URL.revokeObjectURL(audioUrl);
         setAudioUrl("");
       }
-      console.log("Fetching audio for:", content);
+      console.log("Fetching audio for:", cleanContent);
 
       const response = await axios.post(
         `${server}/api/conversation/tts`,
-        { prompt: content },
+        { prompt: cleanContent },
         {
           responseType: "blob",
         }
@@ -49,7 +52,7 @@ function Message({
 
       setAudioUrl(url);
       if (audioPlayerRef.current) {
-        audioPlayerRef.current.pause(); // Pause any currently playing audio
+        audioPlayerRef.current.pause();
         audioPlayerRef.current.src = url;
         audioPlayerRef.current.play();
       }
@@ -67,6 +70,37 @@ function Message({
       }
     };
   }, [audioUrl]);
+
+  // Enhanced message rendering based on message type
+  const renderMessageContent = () => {
+    if (!isUser && (content === "" || isLoading)) {
+      return (
+        <div className="flex items-center">
+          <div className="typing-indicator">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+        </div>
+      );
+    }
+
+    // Apply special formatting for insights or specific message types
+    if (msg_type === "insight") {
+      return (
+        <div className="markdown-content">
+          <ReactMarkdown>{cleanContent}</ReactMarkdown>
+        </div>
+      );
+    }
+
+    // For regular messages with possible formatting
+    return (
+      <div className="markdown-content text-sm">
+        <ReactMarkdown>{cleanContent}</ReactMarkdown>
+      </div>
+    );
+  };
 
   return (
     <div
@@ -89,26 +123,8 @@ function Message({
                 : "bg-secondary text-foreground rounded-bl-none"
             } `}
           >
-            <div className="w-full flex wrap break-word">
-              {!isUser && (content === "" || isLoading) ? (
-                <div className="flex items-center">
-                  <div className="typing-indicator">
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                  </div>
-                </div>
-              ) : (
-                //remove curly braces and quoatation marks if any from the start and end of the content
-                <div
-                  className="text-sm"
-                  dangerouslySetInnerHTML={{
-                    __html: String(content || "")
-                      .replace(/^[{'"`]+/, "") // Remove from start
-                      .replace(/[}'"`]+$/, ""), // Remove from end
-                  }}
-                ></div>
-              )}
+            <div className="w-full flex flex-col break-word">
+              {renderMessageContent()}
             </div>
             <div className="flex justify-between items-center mt-1">
               <div className="text-xs opacity-70 text-right">

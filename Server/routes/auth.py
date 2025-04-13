@@ -79,6 +79,8 @@ def verify_user(token: str):
         token= token.split(" ")[1]  # Extract token from "Bearer <token>"
         decoded_claims = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         emp_id = decoded_claims.get("emp_id")
+        hr_email = decoded_claims.get("hr_email")
+        print(hr_email)
         role = decoded_claims.get("role")
         if role=="employee":
             user = db.query(Master).filter(Master.employee_id == emp_id).first()
@@ -86,10 +88,10 @@ def verify_user(token: str):
                 raise HTTPException(status_code=401, detail="Unauthorized")
             return {"emp_id": emp_id, "role": role}
         elif role=="hr":
-            user = db.query(HRUser).filter(HRUser.id == emp_id).first()
+            user = db.query(HRUser).filter(HRUser.email == hr_email).first()
             if not user:
                 raise HTTPException(status_code=401, detail="Unauthorized")
-            return {"emp_id": emp_id, "role": role}
+            return {"hr_email": hr_email, "role": role}
         
         raise HTTPException(status_code=401, detail="Unauthorized")
         
@@ -257,11 +259,12 @@ def hr_login(request: HRLoginRequest, db: Session = Depends(get_db)):
 #         raise HTTPException(status_code=401, detail="Invalid token")
 
 @router.get("/hr")
-def get_hr(authorization: str = Header(...), db: Session = Depends(get_db)):
+def get_hr(request:Request, db: Session = Depends(get_db)):
     try:
-        token = authorization.split(" ")[1]
+        token = request.headers["Authorization"]
         hr_data = verify_user(token)
-        hr_id = hr_data["user_id"]
+        print(hr_data)
+        hr_id = hr_data["hr_email"]
         hr = db.query(HRUser).filter(HRUser.email == hr_id).first()
         if not hr:
             raise HTTPException(status_code=404, detail="User not found")

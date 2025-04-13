@@ -106,12 +106,13 @@ export default function ConversationPage() {
       const formattedMessages: Message[] = messagesResponse.data.map(
         (msg: any) => {
           if (msg.sender_type === "chatbot") {
-            if (msg.message_type === "normal_question") 
-            {questionsAsked++; }// Count chatbot messages
+            if (msg.message_type === "normal_question") {
+              questionsAsked++;
+            } // Count chatbot messages
             setMessageType(msg.message_type);
           }
-          console.log(msg.time); 
-          
+          console.log(msg.time);
+
           return {
             id: msg.id.toString(),
             content: msg.content,
@@ -125,20 +126,20 @@ export default function ConversationPage() {
       // setMaxQuestions(TotalQuestions - questionsAsked - 1);
       console.log(maxQuestions);
       setMessages(formattedMessages);
-      
+
       // Add just one toast notification with unique ID
       toast.success("Conversation Resumed", {
         description: "You're continuing your previous conversation.",
         id: "conversation-resumed", // Add unique ID to prevent duplicate toasts
       });
-      
+
       // return true;
       // } else return false;
     } catch (error) {
       console.error("Error fetching conversations:", error);
       toast.error("Error", {
         description: "Failed to check for incomplete conversations",
-        id: "failed-fetch-conversations" // Add unique ID for error toast
+        id: "failed-fetch-conversations", // Add unique ID for error toast
       });
       return false;
     }
@@ -149,7 +150,7 @@ export default function ConversationPage() {
     try {
       // Show typing indicator while waiting for the first message
       setIsTyping({ isActive: true });
-      
+
       const response = await axios.get(`${server}/api/conversation/start`, {
         headers: {
           "Content-Type": "application/json",
@@ -162,7 +163,7 @@ export default function ConversationPage() {
 
       setConversationId(data.conversation_id);
       // setSelectedQuestions(data.selected_questions);
-      
+
       // Hide typing indicator after receiving the response
       setIsTyping({ isActive: false });
 
@@ -179,11 +180,11 @@ export default function ConversationPage() {
     } catch (error) {
       // Hide typing indicator in case of error
       setIsTyping({ isActive: false });
-      
+
       console.error("Error starting conversation:", error);
       toast.error("Error", {
         description: "Failed to start the conversation. Please try again.",
-        id: "conversation-start-failed"
+        id: "conversation-start-failed",
       });
     }
   };
@@ -280,7 +281,7 @@ export default function ConversationPage() {
 
   const provideInsights = async () => {
     try {
-      // const 
+      // const
       const response = await axios.get(
         `${server}/api/conversation/insights/${conversationId}`,
         {
@@ -305,7 +306,7 @@ export default function ConversationPage() {
       console.error("Error providing insights:", error);
       toast.error("Error", {
         description: "Failed to generate insights. Please try again later.",
-        id: "insights-error"
+        id: "insights-error",
       });
     }
   };
@@ -333,19 +334,19 @@ export default function ConversationPage() {
       toast.error("Error", {
         description:
           "Failed to generate your wellbeing report. Please try again later.",
-          id: "error-type"
+        id: "error-type",
       });
     }
   };
 
   const handleSendMessage = async () => {
     setIsLoading(true);
-    const chat_history=messages.map((msg) => {
+    const chat_history = messages.map((msg) => {
       return {
         sender_type: msg.isUser ? "employee" : "chatbot",
         message: msg.content,
       };
-    })
+    });
     if (inputValue.trim()) {
       const userMessage: Message = {
         id: `user-${Date.now()}`,
@@ -358,90 +359,90 @@ export default function ConversationPage() {
       setInputValue("");
     }
 
-      // console.log("Chat history", chatHistory);
+    // console.log("Chat history", chatHistory);
 
-      // Show typing indicator with green dots matching the brand color
-      setIsTyping({ isActive: true });
+    // Show typing indicator with green dots matching the brand color
+    setIsTyping({ isActive: true });
 
-      let chatbot_response =
-        "Thank you for your time! The conversation is now over. Here are few insights for your improvement...";
-      if (maxQuestions != 0) {
-        try {
-          // console.log("Posting message for Employee:");
-          // console.log("employee_name:", employee_name);
-          // console.log("employee_name:", employee_id);
-          // console.log("Conversation_id:", conversationId);
-          // console.log("Chat history:", chat_history);
-          // console.log("Selected Questions:", selectedQuestions);
-          // console.log("Message_type:", message_type);
-          // console.log("Input Value:", inputValue);
-          // console.log("Conversation ID:", conversationId);
-        
-          
-          const response = await axios.post(
-            `${server}/api/conversation/message`,
-            {
-              // employee_name: employee_name,
-              // employee_id: employee_id,
-              // shap: shap,
-              message:inputValue||"",
-              conversation_id: conversationId || localStorage.getItem("conversation_id"),
-              // last message type,
-              message_type: message_type,
-              chat_history: chat_history,
-              question_set: selectedQuestions,
+    let chatbot_response =
+      "Thank you for your time! The conversation is now over. Here are few insights for your improvement...";
+    if (maxQuestions != 0) {
+      try {
+        // console.log("Posting message for Employee:");
+        // console.log("employee_name:", employee_name);
+        // console.log("employee_name:", employee_id);
+        // console.log("Conversation_id:", conversationId);
+        // console.log("Chat history:", chat_history);
+        // console.log("Selected Questions:", selectedQuestions);
+        // console.log("Message_type:", message_type);
+        // console.log("Input Value:", inputValue);
+        // console.log("Conversation ID:", conversationId);
+
+        const response = await axios.post(
+          `${server}/api/conversation/message`,
+          {
+            // employee_name: employee_name,
+            // employee_id: employee_id,
+            // shap: shap,
+            message: inputValue || "",
+            conversation_id:
+              conversationId || localStorage.getItem("conversation_id"),
+            // last message type,
+            message_type: message_type,
+            chat_history: chat_history,
+            question_set: selectedQuestions,
+          },
+          {
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
             },
-            {
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-              },
-            }
-          );
-          const data = await response.data;
-          // setChatHistory(data.chat_history);
-
-          chatbot_response = data.chatbot_response;
-          setIsTyping({ isActive: false });
-          setSelectedQuestions(data.question_set);
-          setMessageType(data.message_type);
-          if (data.message_type === "normal_question") {
-            setMaxQuestions((prev) => prev - 1);
           }
-          const botMessage: Message = {
-            id: `bot-${Date.now()}`,
-            content: chatbot_response,
-            msg_type: data.message_type,
-            isUser: false,
-            timestamp: new Date().toTimeString().split(" ")[0],
-          };
+        );
+        const data = await response.data;
+        // setChatHistory(data.chat_history);
 
-          setMessages((prev) => [...prev, botMessage]);
-
+        chatbot_response = data.chatbot_response;
+        setIsTyping({ isActive: false });
+        setSelectedQuestions(data.question_set);
+        setMessageType(data.message_type);
+        if (data.message_type === "normal_question") {
           setMaxQuestions((prev) => prev - 1);
-          console.log(maxQuestions);
-        } catch (error) {
-          console.error("Error sending message:", error);
-          chatbot_response =
-            "I'm having trouble connecting right now. Please try again later.";
-          toast.error("Connection Error", {
-            description:
-              "Failed to send your message. Please check your connection and try again.",
-            id: "send-message-connection-error"
-          });
-          setIsTyping({ isActive: false });
-          setIsLoading(false);
-          //delete the last user message
-          setMessages((prev) => prev.slice(0, prev.length - 1));
         }
-      } else {
-        setHasEnded(true);
+        const botMessage: Message = {
+          id: `bot-${Date.now()}`,
+          content: chatbot_response,
+          msg_type: data.message_type,
+          isUser: false,
+          timestamp: new Date().toTimeString().split(" ")[0],
+        };
+
+        setMessages((prev) => [...prev, botMessage]);
+
+        setMaxQuestions((prev) => prev - 1);
+        console.log(maxQuestions);
+      } catch (error) {
+        console.error("Error sending message:", error);
+        chatbot_response =
+          "I'm having trouble connecting right now. Please try again later.";
+        toast.error("Connection Error", {
+          description:
+            "Failed to send your message. Please check your connection and try again.",
+          id: "send-message-connection-error",
+        });
+        setIsTyping({ isActive: false });
+        setIsLoading(false);
+        //delete the last user message
+        setMessages((prev) => prev.slice(0, prev.length - 1));
       }
-      if (maxQuestions <= 0) {
-        provideInsights();
-        generateReport();
-      }
-      setIsLoading(false);
+    } else {
+      setHasEnded(true);
+    }
+    if (maxQuestions <= 0) {
+      provideInsights();
+      generateReport();
+    }
+    setIsLoading(false);
     // } else {
     //   setIsLoading(false);
     // }
@@ -516,7 +517,7 @@ export default function ConversationPage() {
       toast.error("Transcription Error", {
         description:
           "Failed to transcribe your voice. Please try typing instead.",
-        id: "transcription-error"
+        id: "transcription-error",
       });
     } finally {
       setIsAudioProcessing(false);
@@ -558,7 +559,7 @@ export default function ConversationPage() {
               id={message.id}
               content={message.content}
               isUser={message.isUser}
-              timestamp={message.timestamp}
+              time={message.timestamp}
               msg_type={message.msg_type}
             />
           ))}
@@ -634,7 +635,7 @@ export default function ConversationPage() {
                   overflowWrap: "break-word",
                   wordWrap: "break-word",
                   whiteSpace: "pre-wrap",
-                  wordBreak: "break-word"
+                  wordBreak: "break-word",
                 }}
                 value={inputValue}
                 wrap="hard"
@@ -644,7 +645,6 @@ export default function ConversationPage() {
               />
               {/* Microphone button with improved states */}
               <div className="h-[60px] self-end flex items-center">
-
                 <Button
                   variant="outline"
                   size="icon"
@@ -654,7 +654,8 @@ export default function ConversationPage() {
                       isRecording || isAudioProcessing ? "#86BC25" : "",
                     color: isRecording || isAudioProcessing ? "black" : "",
                     opacity: micPermission === "denied" ? 0.5 : 1,
-                    cursor: micPermission === "denied" ? "not-allowed" : "pointer",
+                    cursor:
+                      micPermission === "denied" ? "not-allowed" : "pointer",
                   }}
                   disabled={micPermission === "denied" || isAudioProcessing}
                   className="relative overflow-hidden shrink-0"
@@ -662,10 +663,10 @@ export default function ConversationPage() {
                     micPermission === "denied"
                       ? "Microphone access denied"
                       : isRecording
-                        ? "Stop recording"
-                        : isAudioProcessing
-                          ? "Processing audio..."
-                          : "Start recording"
+                      ? "Stop recording"
+                      : isAudioProcessing
+                      ? "Processing audio..."
+                      : "Start recording"
                   }
                 >
                   {/* onClick={isRecording ? stopRecording : startRecording}
@@ -728,7 +729,7 @@ export default function ConversationPage() {
                 style={{
                   backgroundColor:
                     inputValue.trim() && !isLoading ? "green-300" : "green-500",
-                  // opacity: inputValue.trim() && !isLoading ? 1 : 1,  
+                  // opacity: inputValue.trim() && !isLoading ? 1 : 1,
                 }}
                 className="bg-green-500 hover:bg-green-600 text-black cursor-pointer shrink-0"
                 size="icon"
